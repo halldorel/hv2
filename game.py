@@ -1,3 +1,4 @@
+from deck import *
 import pygame
 
 background_color = (250, 250, 250)
@@ -9,6 +10,8 @@ screen.fill(background_color)
 
 pygame.display.flip()
 
+deck = deck()
+print deck
 running = True
 
 while running:
