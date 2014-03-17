@@ -10,4 +10,4 @@ class card:
 		# Gets suit image
 		# Assembles card image
 		# Blits to pygame screen at location
-		return
+		
