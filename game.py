@@ -27,13 +27,13 @@ class Card:
 		self.size = (150, 190)
 		self.rect = pygame.Rect(self.pos, self.size)
 		self.surf = pygame.Surface(self.size)
-		self.surf.fill((100, 0, 20))
+		self.surf.blit(bjorundur, (-20,-20))
 
 	# Draw the card at current pos. blit stands for 'block image transfer'
 	# and basically means 'print this on that', this being our card and
 	# that being our screen
 	def draw(self, screen):
-		screen.blit(bjorundur, self.pos)
+		screen.blit(self.surf, self.pos)
 
 	def nudge(self, delta):
 		self.pos = (self.pos[0] + delta[0], self.pos[1] + delta[1])
