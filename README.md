@@ -14,3 +14,13 @@ Uppsetning á OSX
   3.  Keyra leik: (innan hv2 möppunnar)
           python game.py
   4.  Prófa að hreyfa *Birnina* um skjáinn og dást að fegurð hans.
+
+Uppsetning á WinDowns
+---------------------
+  1.  Sækja viðeigandi pakka undir *Windows*
+      http://pygame.org/download.shtml
+  2.  Ef það virkar ekki, þá ertu í slæmum málum.
+
+Uppsetning á Linux
+------------------
+    sudo apt-get install pygame
