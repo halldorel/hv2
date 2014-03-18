@@ -87,6 +87,9 @@ class Table(Deck):
 		if not self.is_empty():
 			return self.deck[-1]
 
+	def pop(self):
+		return self.deck.pop()
+
 	def place(self, card):
 		# Make current top card undraggable
 		if not self.is_empty():
@@ -131,20 +134,29 @@ class Game:
 		self.deck = Stack((300, 300))
 		self.table = [Table((20 + 180*i, 20 + 100)) for i in range(NUM_DECKS)]
 		self.trash = Table((800, 100))
+		self.card_being_dragged = None
 
 	def draw(self):
 		hand = self.deck.draw()
 		for i in range(NUM_DECKS):
 			self.table[i].place(hand[i])
 
+	def start_dragging(self, card):
+		self.card_being_dragged = card
+
+	def stop_dragging(self, card):
+		self.card_being_dragged = None
+
 	# Check which card is pressed. Returns None if no card is pressed.
 	def card_pressed(self, mouse_pos):
 		# Search for card in reversed list. Cards appearing later in list
 		# have precedence as they are rendered last and thus appear on top.
 		for table in self.table:
-			for card in table.get_deck()[::-1]:
-				if card.rect.collidepoint(mouse_pos):# and card.is_draggable():
-					print card
+			for i, card in enumerate(table.get_deck()):
+				if card.rect.collidepoint(mouse_pos) and card.is_draggable():
+					table.pop();
+					top_card = table.top()
+					top_card.set_draggable()
 					return card
 		return None
 

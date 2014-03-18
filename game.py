@@ -35,6 +35,8 @@ game.draw()
 game.draw()
 
 # Main game loop
+
+# TODO: Move mainloop inside of Game class.
 while running:
 
 	# Each time, we draw all the components of the screen, beginning
@@ -70,5 +72,10 @@ while running:
 	# run through the list from the beginning to the end.
 
 	game.render(screen);
+
+	# TODO: Merge this to main gameloop
+	if current_card:
+		current_card.render(screen)
+
 	# Update the screen.
 	pygame.display.flip()
