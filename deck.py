@@ -6,7 +6,7 @@ import pygame
 NUM_DECKS = 4
 
 # TODO: Convert BJORUNDUR to a global plugin
-BJORUNDUR = pygame.image.load('bjorundur.png')
+BJORUNDUR = pygame.image.load('img/bjorundur.png')
 STEINI = pygame.image.load('img/steini_king_card.png')
 
 
@@ -103,7 +103,7 @@ class Table(Deck):
 		# Calculate position of new card from next index in this Table
 		next_index = len(self.deck)
 		card_x = self.pos[0]
-		card_y = next_index * self.STACK_STRIDE
+		card_y = self.pos[1] + next_index * self.STACK_STRIDE
 
 		# Set the position of the card
 		card.set_pos((card_x, card_y))
@@ -118,7 +118,7 @@ class Table(Deck):
 	def render(self, screen):
 		if self.deck:
 			for i, card in enumerate(self.deck):
-				at = self.pos + (0, self.STACK_STRIDE*i)
+				at = tuple(map(sum, zip(self.pos, (0, self.STACK_STRIDE*i))))
 				card.render(screen)
 		else:
 			screen.blit(BJORUNDUR, self.pos)
@@ -137,9 +137,10 @@ class Stack(Deck):
 
 class Game:
 	def __init__(self):
-		self.deck = Stack((300, 300))
-		self.table = [Table((20 + 180*i, 20 + 100)) for i in range(NUM_DECKS)]
-		self.trash = Table((800, 100))
+		# TODO: Shuffle the deck! Otherwise gameplay is boring
+		self.deck = Stack((40, 50))
+		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
+		self.trash = Table((900, 460))
 		self.card_being_dragged = None
 
 	def draw(self):
