@@ -1,3 +1,5 @@
+from deck import *
+
 import pygame
 import random
 
@@ -14,50 +16,23 @@ screen = pygame.display.set_mode((width, height))
 # Set the title of the game window
 pygame.display.set_caption('Kapall')
 
+pygame.font.init()
+
 # The game is running.
 running = True
 
 # First thing first, load our hero
-bjorundur = pygame.image.load('bjorundur.png')
-
-# Makeshift 'Card' class implementation. To be merged with the real one.
-class Card:
-	def __init__(self, x, y):
-		self.pos = (x, y)
-		self.size = (150, 190)
-		self.rect = pygame.Rect(self.pos, self.size)
-		self.surf = pygame.Surface(self.size)
-		self.surf.blit(bjorundur, (-20,-20))
-
-	# Draw the card at current pos. blit stands for 'block image transfer'
-	# and basically means 'print this on that', this being our card and
-	# that being our screen
-	def draw(self, screen):
-		screen.blit(self.surf, self.pos)
-
-	def nudge(self, delta):
-		self.pos = (self.pos[0] + delta[0], self.pos[1] + delta[1])
-		self.rect = pygame.Rect(self.pos, self.size)
-
-	def __repr__(self):
-		return str(self.pos) + " " + str(self.size)
+BJORUNDUR = pygame.image.load('bjorundur.png')
 
 # The card held by the user. Is set to None if mouse is up
 current_card = None
 
-spilastokkur = [Card(20+180*x, 20+220*y) for x in range(3) for y in range(3)]
+game = Game()
+game.draw()
 
-# Check which card is pressed. Returns None if no card is pressed.
-def card_pressed(mouse_pos):
-	# Search for card in reversed list. Cards appearing later in list
-	# have precedence as they are rendered last and thus appear on top.
-	for card in spilastokkur[::-1]:
-		if card.rect.collidepoint(mouse_pos):
-			# Newly moved cards are put in front
-			spilastokkur.remove(card)
-			spilastokkur.append(card)
-			return card
-	return None
+game.draw()
+game.draw()
+game.draw()
 
 # Main game loop
 while running:
@@ -86,15 +61,14 @@ while running:
 	# if not, holding a card, set current_card to the card pressed
 	if mouse_buttons == (1, 0, 0):
 		if not current_card:
-			current_card = card_pressed(mouse_pos)
+			current_card = game.card_pressed(mouse_pos)
 		else:
 			current_card.nudge(mouse_delta)
 
 	# Loop through all the cards, and draw then on our screen. Cards
 	# drawn last are drawn on top of other cards, so this time we
 	# run through the list from the beginning to the end.
-	for card in spilastokkur:
-		card.draw(screen)
 
+	game.render(screen);
 	# Update the screen.
 	pygame.display.flip()

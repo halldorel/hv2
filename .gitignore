@@ -1,3 +1,6 @@
+# Omit graphic work files
+*.psd
+*.sketch
 *.py[cod]
 
 # C extensions
