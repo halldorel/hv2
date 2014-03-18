@@ -15,13 +15,16 @@ class Card:
 		self.rank = rank
 		self.suit = suit
 
+		# Position of card within playing field
 		self.pos = pos
+
+		# TODO: Remove hardcoded values and read them from image
 		self.size = (135, 195)
 		self.rect = pygame.Rect(self.pos, self.size)
-
 		self.surf = pygame.Surface(self.size, pygame.SRCALPHA, 32)
 
 		# Font shitmix
+		# TODO: remove
 		self.font = pygame.font.SysFont('Comic Sans MS', 20)
 		self.textsurf = self.font.render(str(self), True, (0, 0, 0))
 		self.surf.blit(STEINI,(0,0))
@@ -46,6 +49,7 @@ class Card:
 	def render(self, screen):
 		screen.blit(self.surf, self.pos)
 
+	# Set image position and rectangle at given pos
 	def set_pos(self, pos):
 		self.pos = pos
 		self.rect.x = pos[0]
@@ -60,13 +64,15 @@ class Card:
 	def is_draggable(self):
 		return self.draggable
 
+	# Nudge card position
+	# delta should be a tuple
 	def nudge(self, delta):
-		self.pos = (self.pos[0] + delta[0], self.pos[1] + delta[1])
-		self.rect = pygame.Rect(self.pos, self.size)
-
-	def set_x(self, x):
-		self.pos = (x, self.pos[1])
-
+		curr_pos = self.pos
+		# Incredible shitmix for adding tuples discretely
+		# Probably very slow and bad for pandas :-(
+		next_pos = tuple(map(sum, zip(curr_pos, delta)))
+		self.set_pos(next_pos)
+		print next_pos
 
 class Deck:
 	# Top spacing between cards in a stack 
@@ -149,14 +155,14 @@ class Game:
 
 	# Check which card is pressed. Returns None if no card is pressed.
 	def card_pressed(self, mouse_pos):
-		# Search for card in reversed list. Cards appearing later in list
-		# have precedence as they are rendered last and thus appear on top.
+		# Search for touched card in list.
 		for table in self.table:
 			for i, card in enumerate(table.get_deck()):
 				if card.rect.collidepoint(mouse_pos) and card.is_draggable():
 					table.pop();
 					top_card = table.top()
-					top_card.set_draggable()
+					if not table.is_empty():
+						top_card.set_draggable()
 					return card
 		return None
 
