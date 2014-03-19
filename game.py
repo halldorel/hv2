@@ -17,6 +17,7 @@ pygame.font.init()
 # First thing first, load our hero
 BJORUNDUR = pygame.image.load('bjorundur.png')
 
+# TODO: Replay mechanism.
 game = Game(screen)
 game.play()
 

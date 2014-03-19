@@ -80,7 +80,9 @@ class Card:
 		self.set_pos(next_pos)
 
 class Deck:
-	# Top spacing between cards in a stack 
+	# Top spacing between cards in a stack
+	deck = []
+
 	@property
 	def STACK_STRIDE(self):
 		return 20
@@ -91,7 +93,6 @@ class Deck:
 	def get_pos(self):
 		return self.pos;
 	
-
 class Table(Deck):
 	def __init__(self, pos):
 		self.deck = []
@@ -139,7 +140,7 @@ class Table(Deck):
 			screen.blit(BJORUNDUR, self.pos)
 
 class Stack(Deck):
-	def __init__(self, pos, ranks = range(1, 14), suits=['H', 'S', 'D', 'C']):
+	def __init__(self, pos, ranks = range(1, 14), suits = ['H', 'S', 'D', 'C']):
 		self.deck = [Card(rank, suit, pos, draggable=True) for rank in ranks for suit in suits]
 		self.pos = pos
 		self.base = Card(0, 0, self.pos)
@@ -167,7 +168,6 @@ class Game:
 		self.deck = Stack((40, 50))
 		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
 		self.trash = Table((900, 460))
-		self.card_being_dragged = None
 		self.running = True
 		self.current_card = None
 		self.last_table = None
@@ -179,12 +179,7 @@ class Game:
 			for i in range(NUM_DECKS):
 				self.table[i].place(hand[i])
 
-	# TODO: Currently unused. Maybe move event handling inside of game object?
-	def start_dragging(self, card):
-		self.card_being_dragged = card
-
-	def stop_dragging(self, card):
-		self.card_being_dragged = None
+	# TODO: Function for ending game, that is setting self.running to False
 
 	# Determine which table to drop to.
 	def which_table(self, card):
@@ -248,7 +243,7 @@ class Game:
 		
 			# Voluntary quit
 			if event.type == pygame.QUIT:
-				running = False	
+				self.running = False	
 	
 			# Release the card if currently held, when releasing the mouse
 			if event.type == pygame.MOUSEBUTTONUP:
@@ -272,10 +267,6 @@ class Game:
 				else:
 					self.current_card.nudge(mouse_delta)
 	
-		# TODO: Merge this to main gameloop
-		if self.current_card and not self.current_card.is_dummy():
-			self.current_card.render(self.screen)
-	
 		# Update the screen.
 		pygame.display.flip()
 
@@ -287,8 +278,10 @@ class Game:
 			table.render(self.screen)
 		self.trash.render(self.screen)
 
+		if self.current_card and not self.current_card.is_dummy():
+			self.current_card.render(self.screen)
+
 	def play(self):
 		while self.running:
 			self.update()
 			self.render()
-
