@@ -36,7 +36,7 @@ class Card:
 		#self.surf.blit(BJORUNDUR, (0,0))
 
 	# Returns true if the self is of the same suit as other
-	def __eq__(self, other):
+	def suit_buddies(self, other):
 		return self.suit == other.suit
 
 	# ans < 0 if self.rank < other.rank
@@ -159,6 +159,21 @@ class Stack(Deck):
 		if not self.is_empty():
 			screen.blit(BJORUNDUR, self.pos)
 
+class Trash(Deck):
+	def __init__(self, pos):
+		self.pos = pos
+		self.deck = []
+		self.base = Card(0, 0, self.pos)
+
+	def place(self, card):
+		self.deck.append(card)
+
+	def render(self, screen):
+		if self.is_empty():
+			screen.blit(BJORUNDUR, self.pos)
+		else:
+			screen.blit(self.deck[-1].surf, self.pos)						
+
 class Game:
 	def __init__(self, screen):
 		# TODO: Shuffle the deck! Otherwise gameplay is boring
@@ -166,7 +181,7 @@ class Game:
 		self.screen = screen
 		self.deck = Stack((40, 50))
 		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
-		self.trash = Table((900, 460))
+		self.trash = Trash((900, 460))
 		self.running = True
 		self.current_card = None
 		self.last_table = None
@@ -179,8 +194,28 @@ class Game:
 				self.table[i].place(hand[i])
 
 	# TODO: Function for ending game, that is setting self.running to False
+    # is_finished returns true if there are no legal moves to be made
+    def is_finished(self):
+        finished = False
+        if self.deck.is_empty():
+            finished = True
+            for i in range(1,NUM_DECKS):
+                finished = finished and not self.can_discard(self.table[i].top(), i)
+        return finished
 
-	# Determine which table to drop to according to collision area size.
+
+    # can_discard checks whether *this* can be discarded
+    # Takes a Card object and the index of the Table object
+    # it came from.
+	def can_discard(self, this, index):
+		for i in range(1,NUM_DECKS):
+			that = self.table[(index + i) % NUM_DECKS].top()
+			if this.suit_buddies(that):
+				if this < that:
+					return True
+		return False
+        
+	# Determine which table to drop to.
 	def which_table(self, card):
 		# Card can be dropped on many cards. Get largest intersection.
 		collisions = []
@@ -244,7 +279,10 @@ class Game:
 	
 			# Release the card if currently held, when releasing the mouse
 			if event.type == pygame.MOUSEBUTTONUP:
-				if self.current_card and self.last_table:
+				if self.current_card and self.trash.base.rect.colliderect(self.current_card.rect):
+					self.trash.place(self.current_card)
+					self.current_card = None	
+				elif self.current_card and self.last_table:
 					if not self.handle_card_dropped(self.current_card):
 						self.last_table.place(self.current_card)
 					self.current_card = None
