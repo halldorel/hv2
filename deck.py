@@ -9,6 +9,7 @@ NUM_DECKS = 4
 BJORUNDUR = pygame.image.load('img/bjorundur.png')
 STEINI = pygame.image.load('img/steini_king_card.png')
 
+pygame.font.init()
 
 class Card:
 	def __init__(self, rank, suit, pos=(0,0), draggable=True):
@@ -160,18 +161,26 @@ class Stack(Deck):
 		if not self.is_empty():
 			screen.blit(BJORUNDUR, self.pos)
 
-class Game:
-	def __init__(self, screen):
-		# TODO: Shuffle the deck! Otherwise gameplay is boring
-		self.background_color = (80, 170, 80)
-		self.screen = screen
+class Trash(Deck):
+	def __init__(self, pos):
+		self.pos = pos
+		self.deck = []
+		self.base = Card(0, 0, self.pos)
+
+	def place(self, card):
+		self.deck.append(card)
+
+	def render(self, screen):
+		if self.is_empty():
+			screen.blit(BJORUNDUR, self.pos)
+		else:
+			screen.blit(self.deck[-1].surf, self.pos)			
+
+class GameState:
+	def __init__(self):
 		self.deck = Stack((40, 50))
 		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
-		self.trash = Table((900, 460))
-		self.running = True
-		self.current_card = None
-		self.last_table = None
-		self.BJORUNDUR = pygame.image.load('bjorundur.png')
+		self.trash = Trash((900, 460))
 
 	def draw(self):
 		if not self.deck.is_empty():
@@ -202,7 +211,19 @@ class Game:
 				if this < that:
 					return True
 		return False
-        
+
+class Game(GameState):
+	# Game class inherits the GameState
+	def __init__(self, screen):
+		# TODO: Shuffle the deck! Otherwise gameplay is boring
+		GameState.__init__(self)
+		self.background_color = (80, 170, 80)
+		self.screen = screen
+		self.running = True
+		self.current_card = None
+		self.last_table = None
+		self.BJORUNDUR = pygame.image.load('bjorundur.png')
+
 	# Determine which table to drop to.
 	def which_table(self, card):
 		# Card can be dropped on many cards. Get largest intersection.
@@ -235,8 +256,6 @@ class Game:
 			return False
 
 	# Check which card is pressed. Returns None if no card is pressed.
-	# Also return table
-
 	def handle_draw(self, mouse_pos):
 		if not self.deck.is_empty():
 			deck_rect = self.deck.get_rect()
@@ -269,7 +288,10 @@ class Game:
 	
 			# Release the card if currently held, when releasing the mouse
 			if event.type == pygame.MOUSEBUTTONUP:
-				if self.current_card and self.last_table:
+				if self.current_card and self.trash.base.rect.colliderect(self.current_card.rect):
+					self.trash.place(self.current_card)
+					self.current_card = None	
+				elif self.current_card and self.last_table:
 					if not self.handle_card_dropped(self.current_card):
 						self.last_table.place(self.current_card)
 					self.current_card = None
@@ -288,9 +310,6 @@ class Game:
 							self.last_table.pop();
 				else:
 					self.current_card.nudge(mouse_delta)
-	
-		# Update the screen.
-		pygame.display.flip()
 
 	def render(self):
 		# Render deck
@@ -302,6 +321,10 @@ class Game:
 
 		if self.current_card and not self.current_card.is_dummy():
 			self.current_card.render(self.screen)
+
+		# Update the screen.
+		pygame.time.delay(16)
+		pygame.display.flip()
 
 	def play(self):
 		while self.running:

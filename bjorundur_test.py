@@ -3,7 +3,7 @@ import unittest
 
 class RuleMethods(unittest.TestCase):
 	def testDiscardCard(self):
-		game = deck.Game()
+		game = deck.GameState()
 		# We create an instance where we should be able to discard
 		# a single card from the table.
 		game.table[0].place(deck.Card(2, 'H'))
