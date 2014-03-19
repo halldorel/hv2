@@ -9,7 +9,6 @@ NUM_DECKS = 4
 BJORUNDUR = pygame.image.load('img/bjorundur.png')
 STEINI = pygame.image.load('img/steini_king_card.png')
 
-
 class Card:
 	def __init__(self, rank, suit, pos=(0,0), draggable=True):
 		self.rank = rank
@@ -181,7 +180,7 @@ class Game:
 
 	# TODO: Function for ending game, that is setting self.running to False
 
-	# Determine which table to drop to.
+	# Determine which table to drop to according to collision area size.
 	def which_table(self, card):
 		# Card can be dropped on many cards. Get largest intersection.
 		collisions = []
@@ -213,8 +212,6 @@ class Game:
 			return False
 
 	# Check which card is pressed. Returns None if no card is pressed.
-	# Also return table
-
 	def handle_draw(self, mouse_pos):
 		if not self.deck.is_empty():
 			deck_rect = self.deck.get_rect()
@@ -266,9 +263,6 @@ class Game:
 							self.last_table.pop();
 				else:
 					self.current_card.nudge(mouse_delta)
-	
-		# Update the screen.
-		pygame.display.flip()
 
 	def render(self):
 		# Render deck
@@ -280,6 +274,10 @@ class Game:
 
 		if self.current_card and not self.current_card.is_dummy():
 			self.current_card.render(self.screen)
+
+		# Update the screen.
+		pygame.time.delay(16)
+		pygame.display.flip()
 
 	def play(self):
 		while self.running:
