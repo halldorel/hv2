@@ -31,6 +31,9 @@ class Card:
 		self.surf.blit(self.textsurf, (50, 50))
 
 		self.draggable = draggable
+		if self.rank == 0 or self.suit == 0:
+			self.draggable = False
+
 		#self.surf.blit(BJORUNDUR, (0,0))
 
 	# Returns true if the self is of the same suit as other
@@ -60,9 +63,13 @@ class Card:
 
 	def set_undraggable(self):
 		self.draggable = False
+		print " Set undraggable: " + str(self)
 
 	def is_draggable(self):
 		return self.draggable
+
+	def is_dummy(self):
+		return self.rank == 0 and self.suit == 0
 
 	# Nudge card position
 	# delta should be a tuple
@@ -88,18 +95,26 @@ class Table(Deck):
 	def __init__(self, pos):
 		self.deck = []
 		self.pos = pos
+		self.base = Card(0, 0, self.pos)
 
+	# Returns top card, or a dummy empty card which represents base of table
 	def top(self):
 		if not self.is_empty():
 			return self.deck[-1]
+		else:
+			return self.base
 
 	def pop(self):
-		return self.deck.pop()
+		popped = self.deck.pop()
+		top = self.top()
+		if top:
+			top.set_draggable()
+		return popped
 
 	def place(self, card):
 		# Make current top card undraggable
 		if not self.is_empty():
-			self.deck[-1].set_undraggable()
+			self.top().set_undraggable()
 		# Calculate position of new card from next index in this Table
 		next_index = len(self.deck)
 		card_x = self.pos[0]
@@ -111,6 +126,7 @@ class Table(Deck):
 		# Debug output
 		print "card: " + str(card) + " at: " + str(card_x) + ", "  + str(card_y)
 		self.deck.append(card)
+		self.top().set_draggable()
 
 	def get_deck(self):
 		return self.deck
@@ -127,12 +143,21 @@ class Stack(Deck):
 	def __init__(self, pos, ranks = range(1, 14), suits=['H', 'S', 'D', 'C']):
 		self.deck = [Card(rank, suit, pos, draggable=True) for rank in ranks for suit in suits]
 		self.pos = pos
+		self.base = Card(0, 0, self.pos)
 
 	def draw(self):
 		return [self.deck.pop() for i in range(NUM_DECKS)]
 
+	def get_rect(self):
+		if not self.is_empty():
+			return self.deck[-1].rect
+		return pygame.rect(0, 0, 0, 0)
+
+	def get_base(self):
+		return self.base
+
 	def render(self, screen):
-		if self.deck:
+		if not self.is_empty():
 			screen.blit(BJORUNDUR, self.pos)
 
 class Game:
@@ -144,9 +169,10 @@ class Game:
 		self.card_being_dragged = None
 
 	def draw(self):
-		hand = self.deck.draw()
-		for i in range(NUM_DECKS):
-			self.table[i].place(hand[i])
+		if not self.deck.is_empty():
+			hand = self.deck.draw()
+			for i in range(NUM_DECKS):
+				self.table[i].place(hand[i])
 
 	def start_dragging(self, card):
 		self.card_being_dragged = card
@@ -154,17 +180,51 @@ class Game:
 	def stop_dragging(self, card):
 		self.card_being_dragged = None
 
+	# Determine which table to drop to.
+	def which_table(self, card):
+		# Card can be dropped on many cards. Get largest intersection.
+		collisions = []
+
+		for table in self.table:
+			top_card = table.top()
+			# Get the intersection rectangle
+			collisions.append(top_card.rect.clip(card))
+
+		# See which table's top card dragged card covers the most
+		rect_area_max = 0
+		table = None
+		for i, collision in enumerate(collisions):
+			rect_area = collision.width * collision.height
+			if rect_area > rect_area_max:
+				rect_area_max = rect_area
+				table = self.table[i]
+		return table
+
+	def handle_card_dropped(self, card):
+		# TODO: Insert game logic, check if the move is legal
+		table = self.which_table(card)
+		# If card is dropped on any table, place card there
+		if table:
+			table.place(card)
+			return True
+		# Otherwise, return to original table
+		else:
+			return False
+
 	# Check which card is pressed. Returns None if no card is pressed.
+	# Also return table
+
+	def handle_draw(self, mouse_pos):
+		deck_rect = self.deck.get_rect()
+		if deck_rect.collidepoint(mouse_pos):
+			self.draw()
+	
 	def card_pressed(self, mouse_pos):
-		# Search for touched card in list.
+		# Check if user wants to deal cards 
 		for table in self.table:
 			for i, card in enumerate(table.get_deck()):
 				if card.rect.collidepoint(mouse_pos) and card.is_draggable():
-					table.pop();
-					top_card = table.top()
-					if not table.is_empty():
-						top_card.set_draggable()
-					return card
+					return (card, table)
 		return None
 
 	def render(self, screen):
