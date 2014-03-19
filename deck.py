@@ -180,8 +180,18 @@ class Game:
 				self.table[i].place(hand[i])
 
 	# TODO: Function for ending game, that is setting self.running to False
+    
+    # is_finished returns true if there are no legal moves to be made
+    def is_finished(self):
+        finished = False
+        if self.deck.is_empty():
+            finished = True
+            for i in range(1,NUM_DECKS):
+                finished = finished and not self.can_discard(self.table[i].top(), i)
+        return finished
 
-    # We check whether this can be dismissed
+
+    # can_discard checks whether *this* can be discarded
     # Takes a Card object and the index of the Table object
     # it came from.
 	def can_discard(self, this, index):
