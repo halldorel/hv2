@@ -63,7 +63,6 @@ class Card:
 
 	def set_undraggable(self):
 		self.draggable = False
-		print " Set undraggable: " + str(self)
 
 	def is_draggable(self):
 		return self.draggable
@@ -88,6 +87,9 @@ class Deck:
 
 	def is_empty(self):
 		return len(self.deck) == 0
+
+	def get_pos(self):
+		return self.pos;
 	
 
 class Table(Deck):
@@ -158,12 +160,18 @@ class Stack(Deck):
 			screen.blit(BJORUNDUR, self.pos)
 
 class Game:
-	def __init__(self):
+	def __init__(self, screen):
 		# TODO: Shuffle the deck! Otherwise gameplay is boring
+		self.background_color = (80, 170, 80)
+		self.screen = screen
 		self.deck = Stack((40, 50))
 		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
 		self.trash = Table((900, 460))
 		self.card_being_dragged = None
+		self.running = True
+		self.current_card = None
+		self.last_table = None
+		self.BJORUNDUR = pygame.image.load('bjorundur.png')
 
 	def draw(self):
 		if not self.deck.is_empty():
@@ -171,6 +179,7 @@ class Game:
 			for i in range(NUM_DECKS):
 				self.table[i].place(hand[i])
 
+	# TODO: Currently unused. Maybe move event handling inside of game object?
 	def start_dragging(self, card):
 		self.card_being_dragged = card
 
@@ -225,10 +234,61 @@ class Game:
 					return (card, table)
 		return None
 
-	def render(self, screen):
+	def update(self):
+		# Each time, we draw all the components of the screen, beginning
+		# with the background. We draw the background by filling the 'screen'
+		# surface with a solid color.
+	
+		# Loop through the event queue to check what's happening.
+		for event in pygame.event.get():
+			# Mouse event variables.
+			mouse_buttons = pygame.mouse.get_pressed()
+			mouse_delta = pygame.mouse.get_rel()
+			mouse_pos = pygame.mouse.get_pos()
+		
+			# Voluntary quit
+			if event.type == pygame.QUIT:
+				running = False	
+	
+			# Release the card if currently held, when releasing the mouse
+			if event.type == pygame.MOUSEBUTTONUP:
+				if self.current_card and self.last_table:
+					if not self.handle_card_dropped(self.current_card):
+						self.last_table.place(self.current_card)
+					self.current_card = None
+					
+			if event.type == pygame.MOUSEBUTTONDOWN:
+				self.handle_draw(mouse_pos)
+	
+			# If left mouse button is pressed, check if we're holding a card
+			# if not, holding a card, set self.current_card to the card pressed
+			if mouse_buttons == (1, 0, 0):
+				if not self.current_card:
+					if self.card_pressed(mouse_pos):
+						(self.current_card, self.last_table) = self.card_pressed(mouse_pos)
+						if self.current_card and self.last_table:
+							self.current_card = self.last_table.top()
+							self.last_table.pop();
+				else:
+					self.current_card.nudge(mouse_delta)
+	
+		# TODO: Merge this to main gameloop
+		if self.current_card and not self.current_card.is_dummy():
+			self.current_card.render(self.screen)
+	
+		# Update the screen.
+		pygame.display.flip()
+
+	def render(self):
 		# Render deck
-		self.deck.render(screen)
+		self.screen.fill(self.background_color)
+		self.deck.render(self.screen)
 		for table in self.table:
-			table.render(screen)
-		self.trash.render(screen)
+			table.render(self.screen)
+		self.trash.render(self.screen)
+
+	def play(self):
+		while self.running:
+			self.update()
+			self.render()
 
