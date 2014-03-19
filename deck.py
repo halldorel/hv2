@@ -63,6 +63,7 @@ class Card:
 
 	def set_undraggable(self):
 		self.draggable = False
+		print " Set undraggable: " + str(self)
 
 	def is_draggable(self):
 		return self.draggable
