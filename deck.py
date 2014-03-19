@@ -37,7 +37,7 @@ class Card:
 		#self.surf.blit(BJORUNDUR, (0,0))
 
 	# Returns true if the self is of the same suit as other
-	def __eq__(self, other):
+	def suit_buddies(self, other):
 		return self.suit == other.suit
 
 	# ans < 0 if self.rank < other.rank
@@ -181,6 +181,17 @@ class Game:
 
 	# TODO: Function for ending game, that is setting self.running to False
 
+    # We check whether this can be dismissed
+    # Takes a Card object and the index of the Table object
+    # it came from.
+	def can_discard(self, this, index):
+		for i in range(1,NUM_DECKS):
+			that = self.table[(index + i) % NUM_DECKS].top()
+			if this.suit_buddies(that):
+				if this < that:
+					return True
+		return False
+        
 	# Determine which table to drop to.
 	def which_table(self, card):
 		# Card can be dropped on many cards. Get largest intersection.
