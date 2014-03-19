@@ -160,6 +160,21 @@ class Stack(Deck):
 		if not self.is_empty():
 			screen.blit(BJORUNDUR, self.pos)
 
+class Trash(Deck):
+	def __init__(self, pos):
+		self.pos = pos
+		self.deck = []
+		self.base = Card(0, 0, self.pos)
+
+	def place(self, card):
+		self.deck.append(card)
+
+	def render(self, screen):
+		if self.is_empty():
+			screen.blit(BJORUNDUR, self.pos)
+		else:
+			screen.blit(self.deck[-1].surf, self.pos)						
+
 class Game:
 	def __init__(self, screen):
 		# TODO: Shuffle the deck! Otherwise gameplay is boring
@@ -167,7 +182,7 @@ class Game:
 		self.screen = screen
 		self.deck = Stack((40, 50))
 		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
-		self.trash = Table((900, 460))
+		self.trash = Trash((900, 460))
 		self.running = True
 		self.current_card = None
 		self.last_table = None
@@ -247,7 +262,10 @@ class Game:
 	
 			# Release the card if currently held, when releasing the mouse
 			if event.type == pygame.MOUSEBUTTONUP:
-				if self.current_card and self.last_table:
+				if self.current_card and self.trash.base.rect.colliderect(self.current_card.rect):
+					self.trash.place(self.current_card)
+					self.current_card = None	
+				elif self.current_card and self.last_table:
 					if not self.handle_card_dropped(self.current_card):
 						self.last_table.place(self.current_card)
 					self.current_card = None
