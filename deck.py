@@ -181,7 +181,8 @@ class Game:
 
 	# TODO: Function for ending game, that is setting self.running to False
     
-    # is_finished returns true if there are no legal moves to be made
+    # is_finished returns True if there are no legal moves to be made
+    # in the current Game instance.
     def is_finished(self):
         finished = False
         if self.deck.is_empty():
