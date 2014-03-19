@@ -192,13 +192,13 @@ class GameState:
     
     # is_finished returns True if there are no legal moves to be made
     # in the current Game instance.
-    def is_finished(self):
-        finished = False
-        if self.deck.is_empty():
-            finished = True
-            for i in range(1,NUM_DECKS):
-                finished = finished and not self.can_discard(self.table[i].top(), i)
-        return finished
+	def is_finished(self):
+		finished = False
+		if self.deck.is_empty():
+			finished = True
+			for i in range(1,NUM_DECKS):
+				finished = finished and not self.can_discard(self.table[i].top(), i)
+		return finished
 
 
     # can_discard checks whether *this* can be discarded
