@@ -9,6 +9,8 @@ NUM_DECKS = 4
 BJORUNDUR = pygame.image.load('img/bjorundur.png')
 STEINI = pygame.image.load('img/steini_king_card.png')
 
+pygame.font.init()
+
 class Card:
 	def __init__(self, rank, suit, pos=(0,0), draggable=True):
 		self.rank = rank
@@ -172,20 +174,13 @@ class Trash(Deck):
 		if self.is_empty():
 			screen.blit(BJORUNDUR, self.pos)
 		else:
-			screen.blit(self.deck[-1].surf, self.pos)						
+			screen.blit(self.deck[-1].surf, self.pos)			
 
-class Game:
-	def __init__(self, screen):
-		# TODO: Shuffle the deck! Otherwise gameplay is boring
-		self.background_color = (80, 170, 80)
-		self.screen = screen
+class GameState:
+	def __init__(self):
 		self.deck = Stack((40, 50))
 		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
 		self.trash = Trash((900, 460))
-		self.running = True
-		self.current_card = None
-		self.last_table = None
-		self.BJORUNDUR = pygame.image.load('bjorundur.png')
 
 	def draw(self):
 		if not self.deck.is_empty():
@@ -213,7 +208,19 @@ class Game:
 				if this < that:
 					return True
 		return False
-        
+
+class Game(GameState):
+	# Game class inherits the GameState
+	def __init__(self, screen):
+		# TODO: Shuffle the deck! Otherwise gameplay is boring
+		GameState.__init__(self)
+		self.background_color = (80, 170, 80)
+		self.screen = screen
+		self.running = True
+		self.current_card = None
+		self.last_table = None
+		self.BJORUNDUR = pygame.image.load('bjorundur.png')
+
 	# Determine which table to drop to.
 	def which_table(self, card):
 		# Card can be dropped on many cards. Get largest intersection.
