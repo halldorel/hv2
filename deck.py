@@ -195,14 +195,13 @@ class Game:
 
 	# TODO: Function for ending game, that is setting self.running to False
     # is_finished returns true if there are no legal moves to be made
-    def is_finished(self):
-        finished = False
-        if self.deck.is_empty():
-            finished = True
-            for i in range(1,NUM_DECKS):
-                finished = finished and not self.can_discard(self.table[i].top(), i)
-        return finished
-
+	def is_finished(self):
+		finished = False
+		if self.deck.is_empty():
+			finished = True
+			for i in range(1,NUM_DECKS):
+				finished = finished and not self.can_discard(self.table[i].top(), i)
+		return finished
 
     # can_discard checks whether *this* can be discarded
     # Takes a Card object and the index of the Table object
