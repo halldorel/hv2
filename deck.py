@@ -11,29 +11,28 @@ CARD_BASE = pygame.image.load('img/card_base.png')
 CARD_WIDTH = CARD_BASE.get_rect().width
 CARD_HEIGHT = CARD_BASE.get_rect().height
 
-
 pygame.font.init()
 
 class Card:
-	def __init__(self, rank, suit, pos=(0,0), draggable=True, include_ui=True):
+	INTERPOLATE_SPEED = 50
+	DROP_SPEED = 100
+	def __init__(self, rank, suit, pos=(0,0), draggable=True):
 		self.rank = rank
 		self.suit = suit
 
-		# Possibility of omitting all UI related variables
-		# for testing purposes
-		if include_ui:
-			# Position of card within playing field
-			self.pos = pos
+		# Tuple: position of card within playing field
+		self.pos = pos
+		self.dest = pos
+		self.is_held = False
 
-			# TODO: Remove hardcoded values and read them from image
-			self.size = (CARD_WIDTH, CARD_HEIGHT)
-			self.rect = pygame.Rect(self.pos, self.size)
-			self.surf = pygame.Surface(self.size, pygame.SRCALPHA, 32)
-			self.draggable = draggable
-			if self.rank == 0 or self.suit == 0:
-				self.draggable = False
-
-			self.make_card_surface();
+		# TODO: Remove hardcoded values and read them from image
+		self.size = (CARD_WIDTH, CARD_HEIGHT)
+		self.rect = pygame.Rect(self.pos, self.size)
+		self.surf = pygame.Surface(self.size, pygame.SRCALPHA, 32)
+		self.draggable = draggable
+		if self.rank == 0 or self.suit == 0:
+			self.draggable = False
+		self.make_card_surface();
 
 	# Returns true if the self is of the same suit as other
 
@@ -47,9 +46,6 @@ class Card:
 		self.surf.blit(CARD_BASE,(0,0))
 		self.surf.blit(font_rank, (15, 15))
 
-	def suit_buddies(self, other):
-		return self.suit == other.suit
-
 	# ans < 0 if self.rank < other.rank
 	# ans == 0, if self.rank == other.rank
 	# ans > 0, if self.rank > other.rank
@@ -58,6 +54,23 @@ class Card:
 
 	def __repr__(self):
 		return "[" + str(self.rank) + " " + str(self.suit) + "]"
+
+	# Returns true if the self is of the same suit as other
+	def suit_buddies(self, other):
+		return self.suit == other.suit
+
+	def ease(self):
+		speed = INTERPOLATE_SPEED
+		if not self.is_held:
+			speed = DROP_SPEED
+		x = (dest[0] - pos[0])/speed
+		y = (dest[1] - pos[1])/speed
+		self.pos = (x, y)
+		self.rect.x = x
+		self.rect.y = y
+
+	def update(self):
+		self.ease()
 
 	def render(self, screen):
 		screen.blit(self.surf, self.pos)
@@ -81,7 +94,7 @@ class Card:
 		return self.rank == 0 and self.suit == 0
 
 	# Nudge card position
-	# delta should be a tuple
+	# delta should be a tuple of coordinates
 	def nudge(self, delta):
 		curr_pos = self.pos
 		# Incredible shitmix for adding tuples discretely
@@ -151,7 +164,8 @@ class Table(Deck):
 
 class Stack(Deck):
 	def __init__(self, pos, ranks = range(1, 14), suits = ['H', 'S', 'D', 'C']):
-		self.deck = [Card(rank, suit, pos, draggable=True) for rank in ranks for suit in suits]
+		self.init_deck = [Card(rank, suit, pos, draggable=True) for rank in ranks for suit in suits]
+		self.deck = self.init_deck
 		self.pos = pos
 		self.base = Card(0, 0, self.pos)
 
@@ -283,6 +297,9 @@ class Game(GameState):
 		# Each time, we draw all the components of the screen, beginning
 		# with the background. We draw the background by filling the 'screen'
 		# surface with a solid color.
+
+		for card in self.deck_init:
+			card.update()
 	
 		# Loop through the event queue to check what's happening.
 		for event in pygame.event.get():
