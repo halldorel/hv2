@@ -58,7 +58,11 @@ class Card:
 		speed = INTERPOLATE_SPEED
 		if not self.is_held:
 			speed = DROP_SPEED
-		self.pos = ((dest[0] - pos[0])/speed, (dest[1] - pos[1])/speed)
+		x = (dest[0] - pos[0])/speed
+		y = (dest[1] - pos[1])/speed
+		self.pos = (x, y)
+		self.rect.x = x
+		self.rect.y = y
 
 	def render(self, screen):
 		screen.blit(self.surf, self.pos)
