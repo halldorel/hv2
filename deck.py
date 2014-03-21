@@ -12,12 +12,16 @@ STEINI = pygame.image.load('img/steini_king_card.png')
 pygame.font.init()
 
 class Card:
+	INTERPOLATE_SPEED = 50
+	DROP_SPEED = 100
 	def __init__(self, rank, suit, pos=(0,0), draggable=True):
 		self.rank = rank
 		self.suit = suit
 
-		# Position of card within playing field
+		# Tuple: position of card within playing field
 		self.pos = pos
+		self.dest = pos
+		self.is_held = False
 
 		# TODO: Remove hardcoded values and read them from image
 		self.size = (135, 195)
@@ -37,10 +41,6 @@ class Card:
 
 		#self.surf.blit(BJORUNDUR, (0,0))
 
-	# Returns true if the self is of the same suit as other
-	def suit_buddies(self, other):
-		return self.suit == other.suit
-
 	# ans < 0 if self.rank < other.rank
 	# ans == 0, if self.rank == other.rank
 	# ans > 0, if self.rank > other.rank
@@ -49,6 +49,16 @@ class Card:
 
 	def __repr__(self):
 		return "[" + str(self.rank) + " " + str(self.suit) + "]"
+
+	# Returns true if the self is of the same suit as other
+	def suit_buddies(self, other):
+		return self.suit == other.suit
+
+	def ease(self):
+		speed = INTERPOLATE_SPEED
+		if not self.is_held:
+			speed = DROP_SPEED
+		self.pos = ((dest[0] - pos[0])/speed, (dest[1] - pos[1])/speed)
 
 	def render(self, screen):
 		screen.blit(self.surf, self.pos)
@@ -72,7 +82,7 @@ class Card:
 		return self.rank == 0 and self.suit == 0
 
 	# Nudge card position
-	# delta should be a tuple
+	# delta should be a tuple of coordinates
 	def nudge(self, delta):
 		curr_pos = self.pos
 		# Incredible shitmix for adding tuples discretely
