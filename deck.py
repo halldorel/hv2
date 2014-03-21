@@ -116,6 +116,11 @@ class Card:
 		next_pos = tuple(map(sum, zip(curr_pos, delta)))
 		self.set_pos(next_pos)
 
+	def set_rand_dest(self):
+		x = random.randint(0, SCREENWIDTH)
+		y = random.randint(0, SCREENHEIGHT)
+		self.set_dest((x, y))
+
 class Deck:
 	# Top spacing between cards in a stack
 	deck = []
@@ -129,12 +134,6 @@ class Deck:
 
 	def get_pos(self):
 		return self.pos;
-	
-class Table(Deck):
-	def __init__(self, pos):
-		self.deck = []
-		self.pos = pos
-		self.base = Card(0, 0, self.pos)
 
 	# Returns top card, or a dummy empty card which represents base of table
 	def top(self):
@@ -142,6 +141,13 @@ class Table(Deck):
 			return self.deck[-1]
 		else:
 			return self.base
+	
+class Table(Deck):
+	def __init__(self, pos):
+		self.deck = []
+		self.pos = pos
+		self.base = Card(0, 0, self.pos)
+
 
 	def pop(self):
 		popped = self.deck.pop()
@@ -212,13 +218,14 @@ class Trash(Deck):
 		self.base = Card(0, 0, self.pos)
 
 	def place(self, card):
+		card.set_dest(self.pos)
 		self.deck.append(card)
 
 	def render(self, screen):
 		if self.is_empty():
 			screen.blit(BJORUNDUR, self.pos)
 		else:
-			screen.blit(self.deck[-1].surf, self.pos)			
+			screen.blit(self.top().surf, self.top().pos)
 
 class GameState:
 	def __init__(self):
@@ -362,6 +369,10 @@ class Game(GameState):
 		for table in self.table:
 			for card in table.deck:
 				card.update()
+
+		if self.trash.top():
+			self.trash.top().update()
+
 		if self.current_card:
 			self.current_card.update()
 
