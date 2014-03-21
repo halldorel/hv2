@@ -8,7 +8,9 @@ NUM_DECKS = 4
 
 # TODO: Convert BJORUNDUR to a global plugin
 BJORUNDUR = pygame.image.load('img/bjorundur.png')
-STEINI = pygame.image.load('img/steini_king_card.png')
+CARD_BASE = pygame.image.load('img/card_base.png')
+CARD_WIDTH = CARD_BASE.get_rect().width
+CARD_HEIGHT = CARD_BASE.get_rect().height
 
 pygame.font.init()
 
@@ -25,22 +27,25 @@ class Card:
 		self.is_held = False
 
 		# TODO: Remove hardcoded values and read them from image
-		self.size = (135, 195)
+		self.size = (CARD_WIDTH, CARD_HEIGHT)
 		self.rect = pygame.Rect(self.pos, self.size)
 		self.surf = pygame.Surface(self.size, pygame.SRCALPHA, 32)
-
-		# Font shitmix
-		# TODO: remove
-		self.font = pygame.font.SysFont('Comic Sans MS', 20)
-		self.textsurf = self.font.render(str(self), True, (0, 0, 0))
-		self.surf.blit(STEINI,(0,0))
-		self.surf.blit(self.textsurf, (50, 50))
-
 		self.draggable = draggable
 		if self.rank == 0 or self.suit == 0:
 			self.draggable = False
+		self.make_card_surface();
 
-		#self.surf.blit(BJORUNDUR, (0,0))
+	# Returns true if the self is of the same suit as other
+
+	def make_card_surface(self):
+		card_names = ['A', '1', '2', '3', '4', '5', '6',
+		'7', '8', '9', '10', 'J', 'Q', 'K']
+		font = pygame.font.Font('assets/clarendon.ttf', 26)
+		font_rank = font.render(str(card_names[self.rank]), True, (0, 0, 0))
+		font_suit = font.render(str(self.suit), True, (0, 0, 0))
+
+		self.surf.blit(CARD_BASE,(0,0))
+		self.surf.blit(font_rank, (15, 15))
 
 	# ans < 0 if self.rank < other.rank
 	# ans == 0, if self.rank == other.rank
@@ -64,6 +69,9 @@ class Card:
 		self.pos = (x, y)
 		self.rect.x = x
 		self.rect.y = y
+
+	def update(self):
+		self.ease()
 
 	def render(self, screen):
 		screen.blit(self.surf, self.pos)
@@ -157,7 +165,8 @@ class Table(Deck):
 
 class Stack(Deck):
 	def __init__(self, pos, ranks = range(1, 14), suits = ['H', 'S', 'D', 'C']):
-		self.deck = [Card(rank, suit, pos, draggable=True) for rank in ranks for suit in suits]
+		self.init_deck = [Card(rank, suit, pos, draggable=True) for rank in ranks for suit in suits]
+		self.deck = self.init_deck
 		self.pos = pos
 		self.base = Card(0, 0, self.pos)
 
@@ -298,6 +307,9 @@ class Game(GameState):
 		# Each time, we draw all the components of the screen, beginning
 		# with the background. We draw the background by filling the 'screen'
 		# surface with a solid color.
+
+		for card in self.deck_init:
+			card.update()
 	
 		# Loop through the event queue to check what's happening.
 		for event in pygame.event.get():
