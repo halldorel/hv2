@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 
 # Constants:
 # ============================
@@ -15,8 +16,9 @@ CARD_HEIGHT = CARD_BASE.get_rect().height
 pygame.font.init()
 
 class Card:
-	INTERPOLATE_SPEED = 50
-	DROP_SPEED = 100
+	EASE_EPS = 0.01
+	INTERPOLATE_SPEED = 2
+	DROP_SPEED = 2
 	def __init__(self, rank, suit, pos=(0,0), draggable=True):
 		self.rank = rank
 		self.suit = suit
@@ -24,7 +26,9 @@ class Card:
 		# Tuple: position of card within playing field
 		self.pos = pos
 		self.dest = pos
+
 		self.is_held = False
+		self.is_easing = False
 
 		# TODO: Remove hardcoded values and read them from image
 		self.size = (CARD_WIDTH, CARD_HEIGHT)
@@ -34,8 +38,6 @@ class Card:
 		if self.rank == 0 or self.suit == 0:
 			self.draggable = False
 		self.make_card_surface();
-
-	# Returns true if the self is of the same suit as other
 
 	def make_card_surface(self):
 		card_names = ['A', '1', '2', '3', '4', '5', '6',
@@ -60,18 +62,27 @@ class Card:
 	def suit_buddies(self, other):
 		return self.suit == other.suit
 
+	def should_ease(self):
+		if not self.is_held and abs(self.pos[0] - self.dest[0]) < Card.EASE_EPS and abs(self.pos[1] - self.dest[1]) < Card.EASE_EPS:
+			return False
+		return True
+
 	def ease(self):
-		speed = INTERPOLATE_SPEED
+		speed = Card.INTERPOLATE_SPEED
 		if not self.is_held:
-			speed = DROP_SPEED
-		x = (dest[0] - pos[0])/speed
-		y = (dest[1] - pos[1])/speed
+			speed = Card.DROP_SPEED
+		x = int(self.dest[0] - (self.dest[0] - self.pos[0])/speed)
+		y = int(self.dest[1] - (self.dest[1] - self.pos[1])/speed)
 		self.pos = (x, y)
 		self.rect.x = x
 		self.rect.y = y
 
 	def update(self):
-		self.ease()
+		if self.should_ease():
+			self.ease()
+			self.is_easing = True
+		else:
+			self.is_easing = False
 
 	def render(self, screen):
 		screen.blit(self.surf, self.pos)
@@ -79,8 +90,10 @@ class Card:
 	# Set image position and rectangle at given pos
 	def set_pos(self, pos):
 		self.pos = pos
-		self.rect.x = pos[0]
-		self.rect.y = pos[1]
+		self.dest = pos
+
+	def set_dest(self, dest):
+		self.dest = dest
 
 	def set_draggable(self):
 		self.draggable = True
@@ -132,6 +145,7 @@ class Table(Deck):
 
 	def pop(self):
 		popped = self.deck.pop()
+		popped.is_held = True
 		top = self.top()
 		if top:
 			top.set_draggable()
@@ -147,13 +161,16 @@ class Table(Deck):
 		card_y = self.pos[1] + next_index * self.STACK_STRIDE
 
 		# Set the position of the card
-		card.set_pos((card_x, card_y))
-
+		card.set_dest((card_x, card_y))
+		card.set_draggable()
 		self.deck.append(card)
-		self.top().set_draggable()
 
 	def get_deck(self):
 		return self.deck
+
+	def update(self):
+		for card in self.deck:
+			card.update()
 
 	def render(self, screen):
 		if self.deck:
@@ -165,8 +182,8 @@ class Table(Deck):
 
 class Stack(Deck):
 	def __init__(self, pos, ranks = range(1, 14), suits = ['H', 'S', 'D', 'C']):
-		self.init_deck = [Card(rank, suit, pos, draggable=True) for rank in ranks for suit in suits]
-		self.deck = self.init_deck
+		self.deck = [Card(rank, suit, pos, draggable=True) for rank in ranks for suit in suits]
+		self.shuffle()
 		self.pos = pos
 		self.base = Card(0, 0, self.pos)
 
@@ -215,8 +232,6 @@ class GameState:
 			for i in range(NUM_DECKS):
 				self.table[i].place(hand[i])
 
-	
-    
     # is_finished returns True if there are no legal moves to be made
     # in the current Game instance.
 	def is_finished(self):
@@ -226,7 +241,6 @@ class GameState:
 			for i in range(1,NUM_DECKS):
 				finished = finished and not self.can_discard(self.table[i].top(), i)
 		return finished
-
 
     # can_discard checks whether *this* can be discarded
     # Takes a Card object and the index of the Table object
@@ -251,7 +265,6 @@ class Game(GameState):
 		self.last_table = None
 		self.BJORUNDUR = pygame.image.load('bjorundur.png')
 	
-	
 	# Determine which table to drop to.
 	def which_table(self, card):
 		# Card can be dropped on many cards. Get largest intersection.
@@ -274,8 +287,6 @@ class Game(GameState):
 		
 	def end_game(self):
 		self.running = False
-	
-	
 	
 	def handle_card_dropped(self, card):
 		# TODO: Insert game logic, check if the move is legal
@@ -308,9 +319,6 @@ class Game(GameState):
 		# with the background. We draw the background by filling the 'screen'
 		# surface with a solid color.
 
-		for card in self.deck_init:
-			card.update()
-	
 		# Loop through the event queue to check what's happening.
 		for event in pygame.event.get():
 			# Mouse event variables.
@@ -326,10 +334,12 @@ class Game(GameState):
 			if event.type == pygame.MOUSEBUTTONUP:
 				if self.current_card and self.trash.base.rect.colliderect(self.current_card.rect):
 					self.trash.place(self.current_card)
-					self.current_card = None	
+					self.current_card.is_held = False
+					self.current_card = None
 				elif self.current_card and self.last_table:
 					if not self.handle_card_dropped(self.current_card):
 						self.last_table.place(self.current_card)
+					self.current_card.is_held = False
 					self.current_card = None
 					
 			if event.type == pygame.MOUSEBUTTONDOWN:
@@ -343,9 +353,18 @@ class Game(GameState):
 						(self.current_card, self.last_table) = self.card_pressed(mouse_pos)
 						if self.current_card and self.last_table:
 							self.current_card = self.last_table.top()
+							self.current_card.is_held = True
 							self.last_table.pop();
 				else:
 					self.current_card.nudge(mouse_delta)
+	
+		# If we're currently holding a card, update it
+		for table in self.table:
+			for card in table.deck:
+				card.update()
+		if self.current_card:
+			self.current_card.update()
+
 
 	def render(self):
 		# Render deck
@@ -359,7 +378,6 @@ class Game(GameState):
 			self.current_card.render(self.screen)
 
 		# Update the screen.
-		pygame.time.delay(16)
 		pygame.display.flip()
 
 	def play(self):
