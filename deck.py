@@ -1,4 +1,5 @@
 import pygame
+import random
 
 # Constants:
 # ============================
@@ -174,6 +175,9 @@ class Stack(Deck):
 	def render(self, screen):
 		if not self.is_empty():
 			screen.blit(BJORUNDUR, self.pos)
+			
+	def shuffle(self):
+		random.shuffle(self.deck)
 
 class Trash(Deck):
 	def __init__(self, pos):
@@ -202,7 +206,7 @@ class GameState:
 			for i in range(NUM_DECKS):
 				self.table[i].place(hand[i])
 
-	# TODO: Function for ending game, that is setting self.running to False
+	
     
     # is_finished returns True if there are no legal moves to be made
     # in the current Game instance.
@@ -229,7 +233,7 @@ class GameState:
 class Game(GameState):
 	# Game class inherits the GameState
 	def __init__(self, screen):
-		# TODO: Shuffle the deck! Otherwise gameplay is boring
+		
 		GameState.__init__(self)
 		self.background_color = (80, 170, 80)
 		self.screen = screen
@@ -237,7 +241,8 @@ class Game(GameState):
 		self.current_card = None
 		self.last_table = None
 		self.BJORUNDUR = pygame.image.load('bjorundur.png')
-
+	
+	
 	# Determine which table to drop to.
 	def which_table(self, card):
 		# Card can be dropped on many cards. Get largest intersection.
@@ -257,7 +262,12 @@ class Game(GameState):
 				rect_area_max = rect_area
 				table = self.table[i]
 		return table
-
+		
+	def end_game(self):
+		self.running = False
+	
+	
+	
 	def handle_card_dropped(self, card):
 		# TODO: Insert game logic, check if the move is legal
 		table = self.which_table(card)
