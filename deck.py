@@ -7,37 +7,46 @@ NUM_DECKS = 4
 
 # TODO: Convert BJORUNDUR to a global plugin
 BJORUNDUR = pygame.image.load('img/bjorundur.png')
-STEINI = pygame.image.load('img/steini_king_card.png')
+CARD_BASE = pygame.image.load('img/card_base.png')
+CARD_WIDTH = CARD_BASE.get_rect().width
+CARD_HEIGHT = CARD_BASE.get_rect().height
+
 
 pygame.font.init()
 
 class Card:
-	def __init__(self, rank, suit, pos=(0,0), draggable=True):
+	def __init__(self, rank, suit, pos=(0,0), draggable=True, include_ui=True):
 		self.rank = rank
 		self.suit = suit
 
-		# Position of card within playing field
-		self.pos = pos
+		# Possibility of omitting all UI related variables
+		# for testing purposes
+		if include_ui:
+			# Position of card within playing field
+			self.pos = pos
 
-		# TODO: Remove hardcoded values and read them from image
-		self.size = (135, 195)
-		self.rect = pygame.Rect(self.pos, self.size)
-		self.surf = pygame.Surface(self.size, pygame.SRCALPHA, 32)
+			# TODO: Remove hardcoded values and read them from image
+			self.size = (CARD_WIDTH, CARD_HEIGHT)
+			self.rect = pygame.Rect(self.pos, self.size)
+			self.surf = pygame.Surface(self.size, pygame.SRCALPHA, 32)
+			self.draggable = draggable
+			if self.rank == 0 or self.suit == 0:
+				self.draggable = False
 
-		# Font shitmix
-		# TODO: remove
-		self.font = pygame.font.SysFont('Comic Sans MS', 20)
-		self.textsurf = self.font.render(str(self), True, (0, 0, 0))
-		self.surf.blit(STEINI,(0,0))
-		self.surf.blit(self.textsurf, (50, 50))
-
-		self.draggable = draggable
-		if self.rank == 0 or self.suit == 0:
-			self.draggable = False
-
-		#self.surf.blit(BJORUNDUR, (0,0))
+			self.make_card_surface();
 
 	# Returns true if the self is of the same suit as other
+
+	def make_card_surface(self):
+		card_names = ['A', '1', '2', '3', '4', '5', '6',
+		'7', '8', '9', '10', 'J', 'Q', 'K']
+		font = pygame.font.Font('assets/clarendon.ttf', 26)
+		font_rank = font.render(str(card_names[self.rank]), True, (0, 0, 0))
+		font_suit = font.render(str(self.suit), True, (0, 0, 0))
+
+		self.surf.blit(CARD_BASE,(0,0))
+		self.surf.blit(font_rank, (15, 15))
+
 	def suit_buddies(self, other):
 		return self.suit == other.suit
 
