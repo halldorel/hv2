@@ -272,7 +272,7 @@ class GameState:
     # Takes a Card object and the index of the Table object
     # it came from.
 	def can_discard(self, this, index):
-		for i in range(1,NUM_DECKS):
+		for i in range(0,NUM_DECKS):
 			that = self.table[(index + i) % NUM_DECKS].top()
 			if this.suit_buddies(that):
 				if this < that:
@@ -379,8 +379,10 @@ class Game(GameState):
 					self.current_card = None
 					
 			if event.type == pygame.MOUSEBUTTONDOWN:
-				self.handle_trash(mouse_pos)
-				self.handle_draw(mouse_pos)
+				print "Handle"
+				if not self.current_card:
+					self.handle_trash(mouse_pos)
+					self.handle_draw(mouse_pos)
 
 	
 	
