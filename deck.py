@@ -290,7 +290,7 @@ class Game(GameState):
 		table = None
 		dist_min = collisions[0]
 		for i, collision in enumerate(collisions):
-			if collision < dist_min:
+			if collision <= dist_min:
 				dist_min = collision
 				table = self.table[i]
 		return table
