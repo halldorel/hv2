@@ -14,6 +14,7 @@ CARD_SORTS = pygame.image.load('img/icons_sprite.png')
 CARD_WIDTH = CARD_BASE.get_rect().width
 CARD_HEIGHT = CARD_BASE.get_rect().height
 
+# Mandatory pygame-specific setup
 pygame.font.init()
 
 def distSq(a, b):
@@ -136,17 +137,20 @@ class Card:
 		self.set_pos(next_pos)
 
 	def set_rand_dest(self):
-		x = random.randint(0, SCREENWIDTH)
-		y = random.randint(0, SCREENHEIGHT)
+		x = random.randint(0, screen.width)
+		y = random.randint(0, screen.height)
 		self.set_dest((x, y))
 
 class Deck:
 	# Top spacing between cards in a stack
-	deck = []
+	#deck = []
 
 	@property
 	def STACK_STRIDE(self):
 		return 30
+
+	def set_deck(self, deck):
+		self.deck = deck
 
 	def is_empty(self):
 		return len(self.deck) == 0
@@ -250,6 +254,7 @@ class Trash(Deck):
 			self.top().render(screen)
 
 class GameState:
+	this_game = []
 	def __init__(self):
 		self.deck = Stack((40, 50))
 		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
@@ -282,6 +287,28 @@ class GameState:
 					return True
 		return False
 
+	# has_won checks whether the game has been won
+	def has_won(self):
+		victory = self.deck.is_empty()
+		for i in range(0,NUM_DECKS):
+			victory = victory and len(self.table[i].deck) == 1
+		return victory
+
+	def dump_state(self):
+		return { 'deck' : [card for card in self.deck.deck],
+		'table' : [card for card in [table.deck for table in self.table]],
+		'trash' : [card for card in self.trash.deck]
+		 }
+
+	def revert_to_state(self, state):
+		self.deck.set_deck(state['deck'])
+		for table in self.table:
+			table.set_deck(state['table'])
+		self.trash.set_deck(state['trash'])
+
+	def log(self):
+		self.this_game.append(self.dump_state())
+
 class Game(GameState):
 	# Game class inherits the GameState
 	def __init__(self, screen):
@@ -293,6 +320,8 @@ class Game(GameState):
 		self.current_card = None
 		self.last_table = None
 		self.BJORUNDUR = pygame.image.load('bjorundur.png')
+		self.back_arrow = pygame.Surface((50, 50))
+		self.back_arrow.fill((255, 0, 0))
 	
 	# Determine which table to drop to.
 	def which_table(self, card):
@@ -303,7 +332,6 @@ class Game(GameState):
 			top_card = table.top()
 			# We detect the collision by finding which card is closest
 			collisions.append(distSq(top_card.rect.center, card.rect.center))
-		print collisions
 		table = None
 		dist_min = collisions[0]
 		for i, collision in enumerate(collisions):
@@ -315,7 +343,6 @@ class Game(GameState):
 	def end_game(self):
 		self.running = False
 		
-	
 	def handle_card_dropped(self, card):
 		# TODO: Insert game logic, check if the move is legal
 		table = self.which_table(card)
@@ -323,16 +350,26 @@ class Game(GameState):
 		if table:
 			if table.is_empty():
 				table.place(card)
+				self.log()
 				return True
 		# Otherwise, return to original table
 		return False
 
 	# Check which card is pressed. Returns None if no card is pressed.
+	def handle_back_arrow(self, mouse_pos):
+		if self.back_arrow.get_rect().collidepoint(mouse_pos):
+			print "handle"
+			if len(self.this_game) > 1:
+				popped = self.this_game.pop()
+				print popped
+				self.revert_to_state(self.this_game[-1])
+
 	def handle_draw(self, mouse_pos):
 		if not self.deck.is_empty():
 			deck_rect = self.deck.get_rect()
 			if deck_rect.collidepoint(mouse_pos):
 				self.draw()
+				self.log()
 
 	def handle_trash(self, mouse_pos):
 		if self.card_pressed(mouse_pos): 
@@ -340,6 +377,7 @@ class Game(GameState):
 			if self.can_discard(card, index) and card.is_draggable():
 				table.pop()
 				self.trash.place(card)
+				self.log()
 	
 	def card_pressed(self, mouse_pos):
 		# Check if user wants to deal cards
@@ -350,7 +388,6 @@ class Game(GameState):
 			for i, card in enumerate(table.get_deck()):
 				if card.rect.collidepoint(mouse_pos) and card.is_draggable():
 					return (card, table, i)
-
 
 	def update(self):
 		# Each time, we draw all the components of the screen, beginning
@@ -370,11 +407,6 @@ class Game(GameState):
 	
 			# Release the card if currently held, when releasing the mouse
 			if event.type == pygame.MOUSEBUTTONUP:
-				print self.current_card
-				#if self.current_card and self.trash.base.rect.colliderect(self.current_card.rect):
-				#	self.trash.place(self.current_card)
-				#	self.current_card.is_held = False
-				#	self.current_card = None
 				if self.current_card and self.last_table:
 					if not self.handle_card_dropped(self.current_card):
 						self.last_table.place(self.current_card)
@@ -382,8 +414,8 @@ class Game(GameState):
 					self.current_card = None
 					
 			if event.type == pygame.MOUSEBUTTONDOWN:
-				print "Handle"
 				if not self.current_card:
+					self.handle_back_arrow(mouse_pos)
 					self.handle_trash(mouse_pos)
 					self.handle_draw(mouse_pos)
 
@@ -411,6 +443,12 @@ class Game(GameState):
 		if self.current_card:
 			self.current_card.update()
 
+		if self.is_finished():
+			print "Game has finished"
+
+		if self.has_won():
+			print " and player has won!"
+
 
 	def render(self):
 		# Render deck
@@ -422,6 +460,10 @@ class Game(GameState):
 
 		if self.current_card and not self.current_card.is_dummy():
 			self.current_card.render(self.screen)
+
+		# Render back arrow
+		if len(self.this_game) > 1:
+			self.screen.blit(self.back_arrow, (20, self.screen.get_rect().height-70))
 
 		# Update the screen.
 		pygame.display.flip()
