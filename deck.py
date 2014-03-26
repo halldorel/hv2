@@ -16,6 +16,15 @@ CARD_HEIGHT = CARD_BASE.get_rect().height
 
 pygame.font.init()
 
+#Pygame does not render newline characters so many strings.
+rules =	["Only the top card of each pile is free to play. ",
+		"Find two cards of the same suit and remove the ", 
+		"card of the lower rank by clicking it. Aces are ",
+		"considered to be of the highest rank. Spaces can",
+		"be filled with any card. After you have removed ",
+		"all the possible cards, click the stock to deal ",
+		"four cards to the tableau piles. "]
+
 def distSq(a, b):
 	return pow(a[0]-b[0], 2) + pow(a[1]-b[1], 2)
 
@@ -423,10 +432,20 @@ class Game(GameState):
 		if self.current_card and not self.current_card.is_dummy():
 			self.current_card.render(self.screen)
 
+		self.print_rules(rules)
 		# Update the screen.
+		
 		pygame.display.flip()
 
 	def play(self):
 		while self.running:
 			self.update()
 			self.render()
+
+
+	def print_rules(self,rules):
+		font_rules = pygame.font.SysFont('assets/clarendon.ttf', 25)
+		(x,y) = (40,470) #Pos of first string
+		for line in rules:
+			self.screen.blit(font_rules.render(line, True, (0,0,0)), (x, y))
+			(x,y) = (x,y + 15) #Move each line 15 down
