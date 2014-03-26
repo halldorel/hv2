@@ -10,6 +10,7 @@ NUM_DECKS = 4
 # TODO: Convert BJORUNDUR to a global plugin
 BJORUNDUR = pygame.image.load('img/bjorundur.png')
 CARD_BASE = pygame.image.load('img/card_base.png')
+CARD_SORTS = pygame.image.load('img/icons_sprite.png')
 CARD_WIDTH = CARD_BASE.get_rect().width
 CARD_HEIGHT = CARD_BASE.get_rect().height
 
@@ -40,17 +41,28 @@ class Card:
 		self.draggable = draggable
 		if self.rank == 0 or self.suit == 0:
 			self.draggable = False
-		self.make_card_surface();
+		if not self.is_dummy():
+			self.make_card_surface();
 
 	def make_card_surface(self):
 		card_names = ['A', '2', '3', '4', '5', '6',
 		'7', '8', '9', '10', 'J', 'Q', 'K']
+		suits_to_offset = {
+			'C' : 0,
+			'S' : 1,
+			'D' : 2,
+			'H' : 3 }
+		print suits_to_offset['C']
 		font = pygame.font.Font('assets/clarendon.ttf', 22)
-		font_rank = font.render(str(card_names[self.rank - 1]), True, (0, 0, 0))
-		font_suit = font.render(str(self.suit), True, (0, 0, 0))
+		font_rank = font.render(str(card_names[self.rank]), True, (0, 0, 0))
+		suit_img = pygame.Surface((30, 30), pygame.SRCALPHA, 32)
+		suit_img.blit(CARD_SORTS, ((-36*suits_to_offset[self.suit]), 0))
 
+		# Lots of hardcoded values to get the layout right
 		self.surf.blit(CARD_BASE,(0,0))
-		self.surf.blit(font_rank, (15,10))
+		self.surf.blit(font_rank, (25-font_rank.get_rect().width/2,10))
+		self.surf.blit(pygame.transform.rotate(font_rank, 180), (CARD_WIDTH-25-font_rank.get_rect().width/2, CARD_HEIGHT-35))
+		self.surf.blit(pygame.transform.smoothscale(suit_img, (20, 20)), (16, 40))
 
 	# ans < 0 if self.rank < other.rank
 	# ans == 0, if self.rank == other.rank
