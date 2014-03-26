@@ -52,7 +52,6 @@ class Card:
 			'S' : 1,
 			'D' : 2,
 			'H' : 3 }
-		print suits_to_offset['C']
 		if not self.is_dummy():
 			font = pygame.font.Font('assets/clarendon.ttf', 22)
 			font_rank = font.render(str(card_names[self.rank-1]), True, (0, 0, 0))
@@ -69,6 +68,10 @@ class Card:
 	# ans == 0, if self.rank == other.rank
 	# ans > 0, if self.rank > other.rank
 	def __cmp__(self, other):
+		if self.rank == 1:
+			return 1
+		if other.rank == 1:
+			return -1
 		return self.rank - other.rank
 
 	def __repr__(self):
@@ -384,8 +387,6 @@ class Game(GameState):
 					self.handle_trash(mouse_pos)
 					self.handle_draw(mouse_pos)
 
-	
-	
 			# If left mouse button is pressed, check if we're holding a card
 			# if not, holding a card, set self.current_card to the card pressed
 			if mouse_buttons == (1, 0, 0):
