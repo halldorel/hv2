@@ -1,3 +1,4 @@
+.DS_Store
 # Omit graphic work files
 *.psd
 *.sketch

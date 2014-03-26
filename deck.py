@@ -15,6 +15,9 @@ CARD_HEIGHT = CARD_BASE.get_rect().height
 
 pygame.font.init()
 
+def distSq(a, b):
+	return pow(a[0]-b[0], 2) + pow(a[1]-b[1], 2)
+
 class Card:
 	EASE_EPS = 0.01
 	INTERPOLATE_SPEED = 2
@@ -42,12 +45,12 @@ class Card:
 	def make_card_surface(self):
 		card_names = ['A', '1', '2', '3', '4', '5', '6',
 		'7', '8', '9', '10', 'J', 'Q', 'K']
-		font = pygame.font.Font('assets/clarendon.ttf', 26)
+		font = pygame.font.Font('assets/clarendon.ttf', 22)
 		font_rank = font.render(str(card_names[self.rank]), True, (0, 0, 0))
 		font_suit = font.render(str(self.suit), True, (0, 0, 0))
 
 		self.surf.blit(CARD_BASE,(0,0))
-		self.surf.blit(font_rank, (15, 15))
+		self.surf.blit(font_rank, (15,10))
 
 	# ans < 0 if self.rank < other.rank
 	# ans == 0, if self.rank == other.rank
@@ -127,7 +130,7 @@ class Deck:
 
 	@property
 	def STACK_STRIDE(self):
-		return 20
+		return 30
 
 	def is_empty(self):
 		return len(self.deck) == 0
@@ -147,7 +150,6 @@ class Table(Deck):
 		self.deck = []
 		self.pos = pos
 		self.base = Card(0, 0, self.pos)
-
 
 	def pop(self):
 		popped = self.deck.pop()
@@ -224,9 +226,12 @@ class Trash(Deck):
 	def render(self, screen):
 		if self.is_empty():
 			screen.blit(BJORUNDUR, self.pos)
+		elif len(self.deck) == 1:
+			screen.blit(BJORUNDUR, self.pos)
+			self.top().render(screen)
 		else:
-			screen.blit(self.top().surf, self.top().pos)
-
+			self.deck[-2].render(screen)
+			self.top().render(screen)
 class GameState:
 	def __init__(self):
 		self.deck = Stack((40, 50))
@@ -279,16 +284,14 @@ class Game(GameState):
 
 		for table in self.table:
 			top_card = table.top()
-			# Get the intersection rectangle
-			collisions.append(top_card.rect.clip(card))
-
-		# See which table's top card dragged card covers the most
-		rect_area_max = 0
+			# We detect the collision by finding which card is closest
+			collisions.append(distSq(top_card.rect.center, card.rect.center))
+		print collisions
 		table = None
+		dist_min = collisions[0]
 		for i, collision in enumerate(collisions):
-			rect_area = collision.width * collision.height
-			if rect_area > rect_area_max:
-				rect_area_max = rect_area
+			if collision < dist_min:
+				dist_min = collision
 				table = self.table[i]
 		return table
 		
@@ -314,12 +317,15 @@ class Game(GameState):
 				self.draw()
 	
 	def card_pressed(self, mouse_pos):
-		# Check if user wants to deal cards 
+		# Check if user wants to deal cards
+		if not self.deck.is_empty():
+			if self.deck.get_rect().collidepoint(mouse_pos):
+				return None
 		for table in self.table:
 			for i, card in enumerate(table.get_deck()):
 				if card.rect.collidepoint(mouse_pos) and card.is_draggable():
 					return (card, table)
-		return None
+
 
 	def update(self):
 		# Each time, we draw all the components of the screen, beginning
@@ -339,6 +345,7 @@ class Game(GameState):
 	
 			# Release the card if currently held, when releasing the mouse
 			if event.type == pygame.MOUSEBUTTONUP:
+				print self.current_card
 				if self.current_card and self.trash.base.rect.colliderect(self.current_card.rect):
 					self.trash.place(self.current_card)
 					self.current_card.is_held = False
