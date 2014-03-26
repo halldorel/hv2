@@ -43,10 +43,10 @@ class Card:
 		self.make_card_surface();
 
 	def make_card_surface(self):
-		card_names = ['A', '1', '2', '3', '4', '5', '6',
+		card_names = ['A', '2', '3', '4', '5', '6',
 		'7', '8', '9', '10', 'J', 'Q', 'K']
 		font = pygame.font.Font('assets/clarendon.ttf', 22)
-		font_rank = font.render(str(card_names[self.rank]), True, (0, 0, 0))
+		font_rank = font.render(str(card_names[self.rank - 1]), True, (0, 0, 0))
 		font_suit = font.render(str(self.suit), True, (0, 0, 0))
 
 		self.surf.blit(CARD_BASE,(0,0))
