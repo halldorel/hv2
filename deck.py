@@ -297,17 +297,18 @@ class Game(GameState):
 		
 	def end_game(self):
 		self.running = False
+		
 	
 	def handle_card_dropped(self, card):
 		# TODO: Insert game logic, check if the move is legal
 		table = self.which_table(card)
 		# If card is dropped on any table, place card there
 		if table:
-			table.place(card)
-			return True
+			if table.is_empty():
+				table.place(card)
+				return True
 		# Otherwise, return to original table
-		else:
-			return False
+		return False
 
 	# Check which card is pressed. Returns None if no card is pressed.
 	def handle_draw(self, mouse_pos):
