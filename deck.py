@@ -53,16 +53,17 @@ class Card:
 			'D' : 2,
 			'H' : 3 }
 		print suits_to_offset['C']
-		font = pygame.font.Font('assets/clarendon.ttf', 22)
-		font_rank = font.render(str(card_names[self.rank]), True, (0, 0, 0))
-		suit_img = pygame.Surface((30, 30), pygame.SRCALPHA, 32)
-		suit_img.blit(CARD_SORTS, ((-36*suits_to_offset[self.suit]), 0))
-
-		# Lots of hardcoded values to get the layout right
-		self.surf.blit(CARD_BASE,(0,0))
-		self.surf.blit(font_rank, (25-font_rank.get_rect().width/2,10))
-		self.surf.blit(pygame.transform.rotate(font_rank, 180), (CARD_WIDTH-25-font_rank.get_rect().width/2, CARD_HEIGHT-35))
-		self.surf.blit(pygame.transform.smoothscale(suit_img, (20, 20)), (16, 40))
+		if not self.is_dummy():
+			font = pygame.font.Font('assets/clarendon.ttf', 22)
+			font_rank = font.render(str(card_names[self.rank-1]), True, (0, 0, 0))
+			suit_img = pygame.Surface((30, 30), pygame.SRCALPHA, 32)
+			suit_img.blit(CARD_SORTS, ((-36*suits_to_offset[self.suit]), 0))
+	
+			# Lots of hardcoded values to get the layout right
+			self.surf.blit(CARD_BASE,(0,0))
+			self.surf.blit(font_rank, (25-font_rank.get_rect().width/2,10))
+			self.surf.blit(pygame.transform.rotate(font_rank, 180), (CARD_WIDTH-25-font_rank.get_rect().width/2, CARD_HEIGHT-35))
+			self.surf.blit(pygame.transform.smoothscale(suit_img, (20, 20)), (16, 40))
 
 	# ans < 0 if self.rank < other.rank
 	# ans == 0, if self.rank == other.rank
@@ -332,7 +333,7 @@ class Game(GameState):
 	def handle_trash(self, mouse_pos):
 		if self.card_pressed(mouse_pos): 
 			(card, table, index) = self.card_pressed(mouse_pos)
-			if self.can_discard(card, index):
+			if self.can_discard(card, index) and card.is_draggable():
 				table.pop()
 				self.trash.place(card)
 	
