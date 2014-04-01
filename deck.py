@@ -18,13 +18,19 @@ CARD_HEIGHT = CARD_BASE.get_rect().height
 pygame.font.init()
 
 #Pygame does not render newline characters so many strings.
-rules =	["Only the top card of each pile is free to play. ",
-		"Find two cards of the same suit and remove the ", 
-		"card of the lower rank by clicking it. Aces are ",
-		"considered to be of the highest rank. Spaces can",
-		"be filled with any card. After you have removed ",
-		"all the possible cards, click the stock to deal ",
-		"four cards to the tableau piles. "]
+rules =	["The game is about comparing the cards",
+		"that are on the top of each pile. When",
+		"two cards have the same suit, the user",
+		"removes the one of the lower rank by",
+		"clicking it. Any card can be moved to",
+		"an empty space. When no more cards",
+		"can be removed, the deck in the left",
+		"corner is clicked and deals four more",
+		"cards. Ace is considered to be the",
+		"highest rank and the player has won",
+		"the game when the table consists of",
+		"nothing but the four aces, each in it's",
+		"own place."]
 
 def distSq(a, b):
 	return pow(a[0]-b[0], 2) + pow(a[1]-b[1], 2)
@@ -156,7 +162,7 @@ class Deck:
 
 	@property
 	def STACK_STRIDE(self):
-		return 30
+		return 50
 
 	def set_deck(self, deck):
 		self.deck = deck
@@ -486,8 +492,8 @@ class Game(GameState):
 
 
 	def print_rules(self,rules):
-		font_rules = pygame.font.SysFont('assets/clarendon.ttf', 25)
-		(x,y) = (40,470) #Pos of first string
+		font_rules = pygame.font.SysFont('assets/clarendon.ttf', 16)
+		(x,y) = (30,260) #Pos of first string
 		for line in rules:
 			self.screen.blit(font_rules.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 15) #Move each line 15 down
+			(x,y) = (x,y + 30) #Move each line 30 down
