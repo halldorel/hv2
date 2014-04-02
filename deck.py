@@ -494,6 +494,12 @@ class Game(GameState):
 				if p[pygame.K_f]:
 					print("automate move")
 					self.auto_move()
+				if p[pygame.K_q]:
+					print("automate move")
+					self.running = False
+				if p[pygame.K_r]:
+					print("automate move")
+					self.auto_move()
 					
 				global webcam
 				if p[pygame.K_w]:
