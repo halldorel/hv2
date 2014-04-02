@@ -14,7 +14,9 @@ NUM_DECKS = 4
 # Initialize camera
 pygame.camera.init()
 cam = pygame.camera.Camera(pygame.camera.list_cameras()[0])
-cam.start()
+
+if cam not None:
+	cam.start()
 
 # TODO: Convert BJORUNDUR to a global plugin
 BJORUNDUR = pygame.image.load('img/bjorundur.png')
