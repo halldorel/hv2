@@ -492,17 +492,15 @@ class Game(GameState):
 				if p[pygame.K_f]:
 					print("automate move")
 					self.auto_move()
+					
+				global webcam
+				if p[pygame.K_w]:
+					webcam = not webcam
 
 			# Voluntary quit
 			if event.type == pygame.QUIT:
 				self.running = False	
 				
-			if event.type == pygame.KEYDOWN:
-				global webcam
-				p = pygame.key.get_pressed()
-				if p[pygame.K_w]:
-					webcam = not webcam
-	
 			# Release the card if currently held, when releasing the mouse
 			if event.type == pygame.MOUSEBUTTONUP:
 				if self.current_card and self.last_table:
