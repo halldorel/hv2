@@ -200,6 +200,9 @@ class Table(Deck):
 			top.set_draggable()
 		return popped
 
+	def is_empty(self):
+		return len(self.deck) == 0
+
 	def place(self, card):
 		# Make current top card undraggable
 		if not self.is_empty():
@@ -307,6 +310,33 @@ class GameState:
 				if this < that:
 					return True
 		return False
+
+	def auto_discard(self):
+		#while True:
+		#no_change = True
+		for t in range(0, NUM_DECKS):
+			if self.can_discard(self.table[t].top(), t):
+				no_change = False
+				card = self.table[t].pop()
+				self.trash.place(card)
+				self.log()
+				break
+		#if no_change:
+		#	break
+
+	def auto_move(self):
+		for t in self.table:
+			highest = None
+			if t.is_empty():
+				print("true")
+				for a in self.table:
+					if highest == None and a != None and not a.top().is_dummy():
+						highest = a
+					elif highest != None and highest.top() < a.top() and len(a.deck) > 1:
+						highest = a
+			if highest != None:
+				t.place(highest.pop())
+				self.log()
 
 	# has_won checks whether the game has been won
 	def has_won(self):
@@ -421,7 +451,16 @@ class Game(GameState):
 			mouse_buttons = pygame.mouse.get_pressed()
 			mouse_delta = pygame.mouse.get_rel()
 			mouse_pos = pygame.mouse.get_pos()
-		
+			
+			if event.type == pygame.KEYDOWN:
+				p = pygame.key.get_pressed()
+				if p[pygame.K_d]:
+					print("automate discard")
+					self.auto_discard()
+				if p[pygame.K_f]:
+					print("automate move")
+					self.auto_move()
+
 			# Voluntary quit
 			if event.type == pygame.QUIT:
 				self.running = False	
