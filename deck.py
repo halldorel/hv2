@@ -1,12 +1,22 @@
 import pygame
 import random
 import math
+import pygame.camera
+import pygame.image
 import copy
+
 
 # Constants:
 # ============================
 # Number of decks on table:
 NUM_DECKS = 4
+
+# Initialize camera
+pygame.camera.init()
+cam = pygame.camera.Camera(pygame.camera.list_cameras()[0])
+
+if cam is not None:
+	cam.start()
 
 # TODO: Convert BJORUNDUR to a global plugin
 BJORUNDUR = pygame.image.load('img/bjorundur.png')
@@ -15,8 +25,23 @@ CARD_SORTS = pygame.image.load('img/icons_sprite.png')
 CARD_WIDTH = CARD_BASE.get_rect().width
 CARD_HEIGHT = CARD_BASE.get_rect().height
 
+webcam = True
+
+
+def picture():
+
+	if cam == None:
+		return BJORUNDUR
+	
+	img = cam.get_image()
+	img = pygame.transform.smoothscale(img,(135,195))
+	return img
+	
+STEINI = picture()
+
 # Mandatory pygame-specific setup
 pygame.font.init()
+
 
 #Pygame does not render newline characters so many strings.
 rules =	["The game is about comparing the cards",
@@ -231,7 +256,7 @@ class Table(Deck):
 				at = tuple(map(sum, zip(self.pos, (0, self.STACK_STRIDE*i))))
 				card.render(screen)
 		else:
-			screen.blit(BJORUNDUR, self.pos)
+			screen.blit(STEINI, self.pos)
 
 class Stack(Deck):
 	def __init__(self, pos, ranks = range(1, 14), suits = ['H', 'S', 'D', 'C']):
@@ -253,7 +278,7 @@ class Stack(Deck):
 
 	def render(self, screen):
 		if not self.is_empty():
-			screen.blit(BJORUNDUR, self.pos)
+			screen.blit(STEINI, self.pos)
 			
 	def shuffle(self):
 		random.shuffle(self.deck)
@@ -270,9 +295,9 @@ class Trash(Deck):
 
 	def render(self, screen):
 		if self.is_empty():
-			screen.blit(BJORUNDUR, self.pos)
+			screen.blit(STEINI, self.pos)
 		elif len(self.deck) == 1:
-			screen.blit(BJORUNDUR, self.pos)
+			screen.blit(STEINI, self.pos)
 			self.top().render(screen)
 		else:
 			self.deck[-2].render(screen)
@@ -486,11 +511,15 @@ class Game(GameState):
 				if p[pygame.K_f]:
 					print("automate move")
 					self.auto_move()
+					
+				global webcam
+				if p[pygame.K_w]:
+					webcam = not webcam
 
 			# Voluntary quit
 			if event.type == pygame.QUIT:
 				self.running = False	
-	
+				
 			# Release the card if currently held, when releasing the mouse
 			if event.type == pygame.MOUSEBUTTONUP:
 				if self.current_card and self.last_table:
@@ -530,6 +559,10 @@ class Game(GameState):
 			self.current_card.update()
 
 	def render(self):
+		global webcam
+		global STEINI 
+		if webcam == True:
+			STEINI = picture()
 		# Render deck
 		self.screen.fill(self.background_color)
 		self.deck.render(self.screen)
