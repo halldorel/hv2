@@ -14,13 +14,10 @@ screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption('Kapall')
 pygame.font.init()
 
-# First thing first, load our hero
-BJORUNDUR = pygame.image.load('bjorundur.png')
 
-# TODO: Replay mechanism.
-game = Game(screen)
-game.play()
+while True:
+	game = Game(screen)
+	game.play()
+	if not game.replay():
+		break
 
-# Main game loop
-
-# TODO: Move mainloop inside of Game class.
