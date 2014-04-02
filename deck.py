@@ -18,13 +18,25 @@ CARD_HEIGHT = CARD_BASE.get_rect().height
 pygame.font.init()
 
 #Pygame does not render newline characters so many strings.
-rules =	["Only the top card of each pile is free to play. ",
-		"Find two cards of the same suit and remove the ", 
-		"card of the lower rank by clicking it. Aces are ",
-		"considered to be of the highest rank. Spaces can",
-		"be filled with any card. After you have removed ",
-		"all the possible cards, click the stock to deal ",
-		"four cards to the tableau piles. "]
+rules =	["The game is about comparing the cards",
+		"that are on the top of each pile. When",
+		"two cards have the same suit, the user",
+		"removes the one of the lower rank by",
+		"clicking it. Any card can be moved to",
+		"an empty space. When no more cards",
+		"can be removed, the deck in the left",
+		"corner is clicked and deals four more",
+		"cards. Ace is considered to be the",
+		"highest rank and the player has won",
+		"the game when the table consists of",
+		"nothing but the four aces, each in it's",
+		"own place."]
+
+winning_status = ["Congratulations! You have won the game.",
+				  "Do you want to start a new one?"]
+
+defeat_status = ["Sorry. There are no more legal moves.",
+				"Do you want to start a new game?"]				  		
 
 def distSq(a, b):
 	return pow(a[0]-b[0], 2) + pow(a[1]-b[1], 2)
@@ -156,7 +168,7 @@ class Deck:
 
 	@property
 	def STACK_STRIDE(self):
-		return 30
+		return 45
 
 	def set_deck(self, deck):
 		self.deck = deck
@@ -281,7 +293,7 @@ class GameState:
 		finished = False
 		if self.deck.is_empty():
 			finished = True
-			for i in range(1,NUM_DECKS):
+			for i in range(0,NUM_DECKS):
 				finished = finished and not self.can_discard(self.table[i].top(), i)
 		return finished
 
@@ -301,7 +313,7 @@ class GameState:
 		victory = self.deck.is_empty()
 		for i in range(0,NUM_DECKS):
 			victory = victory and len(self.table[i].deck) == 1
-		return victory
+		return victory	
 
 	def dump_state(self):
 		return { 'deck' : [card for card in self.deck.deck],
@@ -452,11 +464,6 @@ class Game(GameState):
 		if self.current_card:
 			self.current_card.update()
 
-		if self.is_finished():
-			print "Game has finished"
-
-		if self.has_won():
-			print " and player has won!"
 
 
 	def render(self):
@@ -476,6 +483,12 @@ class Game(GameState):
 
 		self.print_rules(rules)
 		# Update the screen.
+
+		if self.is_finished():
+			self.print_defeat_status(defeat_status)
+
+		if self.has_won():
+			self.print_win_status(winning_status)	
 		
 		pygame.display.flip()
 
@@ -484,10 +497,24 @@ class Game(GameState):
 			self.update()
 			self.render()
 
+	def print_win_status(self, winning_status):
+		font_winning_status = pygame.font.SysFont('assets/clarendon.ttf', 20)
+		(x,y) = (400, 300)
+		for line in winning_status:
+			self.screen.blit(font_winning_status.render(line, True, (0,0,0)), (x, y))
+			(x,y) = (x,y + 25)
+	
+	def print_defeat_status(self, defeat_status):
+		font_defeat_status = pygame.font.SysFont('assets/clarendon.ttf', 20)
+		(x,y) = (400, 300)
+		for line in defeat_status:
+			self.screen.blit(font_defeat_status.render(line, True, (0,0,0)), (x, y))
+			(x,y) = (x,y + 25)	
+			
 
 	def print_rules(self,rules):
-		font_rules = pygame.font.SysFont('assets/clarendon.ttf', 25)
-		(x,y) = (40,470) #Pos of first string
+		font_rules = pygame.font.SysFont('assets/clarendon.ttf', 16)
+		(x,y) = (30,260) #Pos of first string
 		for line in rules:
 			self.screen.blit(font_rules.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 15) #Move each line 15 down
+			(x,y) = (x,y + 25) #Move each line 25 down
