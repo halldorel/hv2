@@ -1,22 +1,28 @@
 import pygame
 import random
 import math
-import pygame.camera
-import pygame.image
 import copy
 
+cam = None
 
+try:
+	import pygame.camera
+	import pygame.image
+	
+	pygame.camera.init()
+	cam = pygame.camera.Camera(pygame.camera.list_cameras()[0])
+	
+	if cam is not None:
+		cam.start()
+
+except:
+	pass
+	
+	
 # Constants:
 # ============================
 # Number of decks on table:
 NUM_DECKS = 4
-
-# Initialize camera
-pygame.camera.init()
-cam = pygame.camera.Camera(pygame.camera.list_cameras()[0])
-
-if cam is not None:
-	cam.start()
 
 # TODO: Convert BJORUNDUR to a global plugin
 BJORUNDUR = pygame.image.load('img/bjorundur.png')
@@ -29,7 +35,6 @@ DEFEAT_PANEL = pygame.image.load('img/panel_base.png')
 VICTORY_PANEL = pygame.image.load('img/cup.png')
 
 webcam = True
-
 
 def picture():
 
@@ -44,7 +49,6 @@ STEINI = picture()
 
 # Mandatory pygame-specific setup
 pygame.font.init()
-
 
 #Pygame does not render newline characters so many strings.
 rules =	["The game is about comparing the cards",
@@ -61,7 +65,14 @@ rules =	["The game is about comparing the cards",
 		"nothing but the four aces, each in it's",
 		"own place."]			  		
 
-
+keys = ["Press r for a new game and ",
+		"q to quit any time. Press",
+		"w to un/freeze camera. To",
+		"auto play press f for",
+		"moving to an empty stack",
+		"and d to throw card. For",
+		"camera you need Linux."]
+		
 def distSq(a, b):
 	return pow(a[0]-b[0], 2) + pow(a[1]-b[1], 2)
 
@@ -109,10 +120,6 @@ class Card:
 			self.surf.blit(font_rank, (25-font_rank.get_rect().width/2,10))
 			self.surf.blit(pygame.transform.rotate(font_rank, 180), (CARD_WIDTH-25-font_rank.get_rect().width/2, CARD_HEIGHT-35))
 			self.surf.blit(pygame.transform.smoothscale(suit_img, (20, 20)), (16, 40))
-
-
-
-
 
 	# ans < 0 if self.rank < other.rank
 	# ans == 0, if self.rank == other.rank
@@ -413,17 +420,18 @@ class GameState:
 class Game(GameState):
 	# Game class inherits the GameState
 	def __init__(self, screen):
-		
 		GameState.__init__(self)
 		self.background_color = (80, 170, 80)
 		self.screen = screen
 		self.running = True
 		self.current_card = None
 		self.last_table = None
-		self.BJORUNDUR = pygame.image.load('bjorundur.png')
 		self.back_arrow = pygame.Surface((50, 50))
 		self.back_arrow.fill((255, 0, 0))
+		self.play_again = False
 	
+	def replay(self):
+		return self.play_again
 	# Determine which table to drop to.
 	def which_table(self, card):
 		# Card can be dropped on many cards. Get largest intersection.
@@ -514,6 +522,11 @@ class Game(GameState):
 				if p[pygame.K_f]:
 					print("automate move")
 					self.auto_move()
+				if p[pygame.K_q]:
+					self.running = False
+				if p[pygame.K_r]:
+					self.running = False
+					self.play_again = True
 					
 				global webcam
 				if p[pygame.K_w]:
@@ -584,15 +597,15 @@ class Game(GameState):
 		if len(self.this_game) > 1:
 			self.screen.blit(self.back_arrow, (20, self.screen.get_rect().height-70))
 
-		self.print_text(rules,30,260,16,25)
+		self.print_text(rules,30,260,15,25)
+		self.print_text(keys,900,70,15,25)
 		
 		if self.is_finished():
 			self.print_defeat_status()
 
 		if self.has_won():
 			self.print_win_status()	
-
-			
+	
 		# Update the screen.
 		pygame.display.flip()
 
@@ -601,16 +614,12 @@ class Game(GameState):
 			self.update()
 			self.render()
 
-
 	def print_win_status(self):
 		self.screen.blit(VICTORY_PANEL, (417, 300))
-	
 	
 	def print_defeat_status(self):
 		self.screen.blit(DEFEAT_PANEL, (417, 300))			
 			
-
-
 	def print_text(self,text,a,b,fontsize,diff):
 		font_text = pygame.font.SysFont('assets/clarendon.ttf', fontsize)
 		for line in text:
