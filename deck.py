@@ -13,6 +13,9 @@ CARD_BASE = pygame.image.load('img/card_base.png')
 CARD_SORTS = pygame.image.load('img/icons_sprite.png')
 CARD_WIDTH = CARD_BASE.get_rect().width
 CARD_HEIGHT = CARD_BASE.get_rect().height
+BOTTOMPANEL = pygame.Surface
+DEFEAT_PANEL = pygame.image.load('img/panel_base.png')
+VICTORY_PANEL = pygame.image.load('img/cup.png')
 
 # Mandatory pygame-specific setup
 pygame.font.init()
@@ -30,13 +33,9 @@ rules =	["The game is about comparing the cards",
 		"highest rank and the player has won",
 		"the game when the table consists of",
 		"nothing but the four aces, each in it's",
-		"own place."]
+		"own place."]			  		
 
-winning_status = ["Congratulations! You have won the game.",
-				  "Do you want to start a new one?"]
-
-defeat_status = ["Sorry. There are no more legal moves.",
-				"Do you want to start a new game?"]				  		
+			  		
 
 def distSq(a, b):
 	return pow(a[0]-b[0], 2) + pow(a[1]-b[1], 2)
@@ -85,6 +84,10 @@ class Card:
 			self.surf.blit(font_rank, (25-font_rank.get_rect().width/2,10))
 			self.surf.blit(pygame.transform.rotate(font_rank, 180), (CARD_WIDTH-25-font_rank.get_rect().width/2, CARD_HEIGHT-35))
 			self.surf.blit(pygame.transform.smoothscale(suit_img, (20, 20)), (16, 40))
+
+
+
+
 
 	# ans < 0 if self.rank < other.rank
 	# ans == 0, if self.rank == other.rank
@@ -294,7 +297,7 @@ class GameState:
 		if self.deck.is_empty():
 			finished = True
 			for i in range(0,NUM_DECKS):
-				finished = finished and not self.can_discard(self.table[i].top(), i)
+				finished = (finished and not self.can_discard(self.table[i].top(), i)) and not self.table[i].is_empty()
 		return finished
 
     # can_discard checks whether *this* can be discarded
@@ -410,6 +413,7 @@ class Game(GameState):
 				if card.rect.collidepoint(mouse_pos) and card.is_draggable():
 					return (card, table, i)
 
+
 	def update(self):
 		# Each time, we draw all the components of the screen, beginning
 		# with the background. We draw the background by filling the 'screen'
@@ -453,14 +457,18 @@ class Game(GameState):
 				else:
 					self.current_card.nudge(mouse_delta)
 	
-		# If we're currently holding a card, update it
 		for table in self.table:
 			for card in table.deck:
 				card.update()
+			if self.is_finished():
+				table.top().set_undraggable()
+			if self.has_won():
+				table.top().set_undraggable()	
 
 		if self.trash.top():
 			self.trash.top().update()
 
+		# If we're currently holding a card, update it
 		if self.current_card:
 			self.current_card.update()
 
@@ -485,10 +493,10 @@ class Game(GameState):
 		# Update the screen.
 
 		if self.is_finished():
-			self.print_defeat_status(defeat_status)
+			self.print_defeat_status()
 
 		if self.has_won():
-			self.print_win_status(winning_status)	
+			self.print_win_status()	
 		
 		pygame.display.flip()
 
@@ -497,19 +505,12 @@ class Game(GameState):
 			self.update()
 			self.render()
 
-	def print_win_status(self, winning_status):
-		font_winning_status = pygame.font.SysFont('assets/clarendon.ttf', 20)
-		(x,y) = (400, 300)
-		for line in winning_status:
-			self.screen.blit(font_winning_status.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 25)
+	def print_win_status(self):
+		self.screen.blit(VICTORY_PANEL, (417, 300))
 	
-	def print_defeat_status(self, defeat_status):
-		font_defeat_status = pygame.font.SysFont('assets/clarendon.ttf', 20)
-		(x,y) = (400, 300)
-		for line in defeat_status:
-			self.screen.blit(font_defeat_status.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 25)	
+	
+	def print_defeat_status(self):
+		self.screen.blit(DEFEAT_PANEL, (417, 300))			
 			
 
 	def print_rules(self,rules):
