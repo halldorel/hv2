@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+import copy
 
 # Constants:
 # ============================
@@ -36,7 +37,7 @@ winning_status = ["Congratulations! You have won the game.",
 				  "Do you want to start a new one?"]
 
 defeat_status = ["Sorry. There are no more legal moves.",
-				"Do you want to start a new game?"]				  		
+				"Do you want to start a new game?"]
 
 def distSq(a, b):
 	return pow(a[0]-b[0], 2) + pow(a[1]-b[1], 2)
@@ -275,8 +276,8 @@ class Trash(Deck):
 			self.top().render(screen)
 
 class GameState:
-	this_game = []
 	def __init__(self):
+		self.this_game = []
 		self.deck = Stack((40, 50))
 		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
 		self.trash = Trash((900, 460))
@@ -316,15 +317,20 @@ class GameState:
 		return victory	
 
 	def dump_state(self):
-		return { 'deck' : [card for card in self.deck.deck],
-		'table' : [card for card in [table.deck for table in self.table]],
-		'trash' : [card for card in self.trash.deck]
+		return { 'deck' : copy.deepcopy(self.deck.deck),
+		'table' : [copy.deepcopy(table.deck) for table in self.table],
+		'trash' : copy.deepcopy(self.trash.deck)
 		 }
 
 	def revert_to_state(self, state):
+		print "Old deck: " + str(self.deck)
+		print "New deck to be set: " + str(state['deck'])
 		self.deck.set_deck(state['deck'])
-		for table in self.table:
-			table.set_deck(state['table'])
+		print "New deck: " + str(self.deck)
+
+		for i, table in enumerate(self.table):
+			print state['table'][i]
+			table.set_deck(state['table'][i])
 		self.trash.set_deck(state['trash'])
 
 	def log(self):
@@ -382,8 +388,11 @@ class Game(GameState):
 			print "handle"
 			if len(self.this_game) > 1:
 				popped = self.this_game.pop()
-				print popped
+				print "Popped: " + str(popped)
+				print "Minus one" + str(self.this_game[-1])
 				self.revert_to_state(self.this_game[-1])
+			return True
+		return False
 
 	def handle_draw(self, mouse_pos):
 		if not self.deck.is_empty():
@@ -421,7 +430,11 @@ class Game(GameState):
 			mouse_buttons = pygame.mouse.get_pressed()
 			mouse_delta = pygame.mouse.get_rel()
 			mouse_pos = pygame.mouse.get_pos()
-		
+
+			if event.type == pygame.KEYDOWN:
+				print self.this_game.pop()
+				print self.this_game
+
 			# Voluntary quit
 			if event.type == pygame.QUIT:
 				self.running = False	
@@ -433,25 +446,25 @@ class Game(GameState):
 						self.last_table.place(self.current_card)
 					self.current_card.is_held = False
 					self.current_card = None
-					
-			if event.type == pygame.MOUSEBUTTONDOWN:
-				if not self.current_card:
-					self.handle_back_arrow(mouse_pos)
-					self.handle_trash(mouse_pos)
-					self.handle_draw(mouse_pos)
 
 			# If left mouse button is pressed, check if we're holding a card
 			# if not, holding a card, set self.current_card to the card pressed
 			if mouse_buttons == (1, 0, 0):
-				if not self.current_card:
-					if self.card_pressed(mouse_pos):
-						(self.current_card, self.last_table, i) = self.card_pressed(mouse_pos)
-						if self.current_card and self.last_table:
-							self.current_card = self.last_table.top()
-							self.current_card.is_held = True
-							self.last_table.pop();
+				if event.type == pygame.MOUSEBUTTONDOWN:
+					if not self.current_card:
+						if not self.handle_back_arrow(mouse_pos):
+							self.handle_trash(mouse_pos)
+							self.handle_draw(mouse_pos)
 				else:
-					self.current_card.nudge(mouse_delta)
+					if not self.current_card:
+						if self.card_pressed(mouse_pos):
+							(self.current_card, self.last_table, i) = self.card_pressed(mouse_pos)
+							if self.current_card and self.last_table:
+								self.current_card = self.last_table.top()
+								self.current_card.is_held = True
+								self.last_table.pop();
+					else:
+						self.current_card.nudge(mouse_delta)
 	
 		# If we're currently holding a card, update it
 		for table in self.table:
@@ -463,8 +476,6 @@ class Game(GameState):
 
 		if self.current_card:
 			self.current_card.update()
-
-
 
 	def render(self):
 		# Render deck
