@@ -284,6 +284,22 @@ class GameState:
 		self.deck = Stack((40, 50))
 		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
 		self.trash = Trash((900, 460))
+		self.log()
+
+	# Ugly function no one should use.
+	def force_reset_drag_status(self):
+		for card in self.deck.deck:
+			card.set_undraggable()
+
+		for table in self.table:
+			for i, card in enumerate(table.deck):
+				if i == len(table.deck):
+					card.set_draggable()
+				else:
+					card.set_undraggable()
+
+		for card in self.trash.deck:
+			card.set_undraggable()
 
 	def draw(self):
 		if not self.deck.is_empty():
@@ -347,9 +363,9 @@ class GameState:
 		return victory	
 
 	def dump_state(self):
-		return { 'deck' : copy.deepcopy(self.deck.deck),
-		'table' : [copy.deepcopy(table.deck) for table in self.table],
-		'trash' : copy.deepcopy(self.trash.deck)
+		return { 'deck' : [copy.copy(card) for card in self.deck.deck],
+		'table' : [copy.copy(card) for card in [table.deck for table in self.table]],
+		'trash' : [copy.copy(card) for card in self.trash.deck]
 		 }
 
 	def revert_to_state(self, state):
@@ -362,6 +378,7 @@ class GameState:
 			print state['table'][i]
 			table.set_deck(state['table'][i])
 		self.trash.set_deck(state['trash'])
+		self.force_reset_drag_status()
 
 	def log(self):
 		self.this_game.append(self.dump_state())
