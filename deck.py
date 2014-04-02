@@ -1,11 +1,22 @@
 import pygame
 import random
 import math
+import pygame.camera
+import pygame.image
+import copy
+
 
 # Constants:
 # ============================
 # Number of decks on table:
 NUM_DECKS = 4
+
+# Initialize camera
+pygame.camera.init()
+cam = pygame.camera.Camera(pygame.camera.list_cameras()[0])
+
+if cam is not None:
+	cam.start()
 
 # TODO: Convert BJORUNDUR to a global plugin
 BJORUNDUR = pygame.image.load('img/bjorundur.png')
@@ -17,8 +28,23 @@ BOTTOMPANEL = pygame.Surface
 DEFEAT_PANEL = pygame.image.load('img/panel_base.png')
 VICTORY_PANEL = pygame.image.load('img/cup.png')
 
+webcam = True
+
+
+def picture():
+
+	if cam == None:
+		return BJORUNDUR
+	
+	img = cam.get_image()
+	img = pygame.transform.smoothscale(img,(135,195))
+	return img
+	
+STEINI = picture()
+
 # Mandatory pygame-specific setup
 pygame.font.init()
+
 
 #Pygame does not render newline characters so many strings.
 rules =	["The game is about comparing the cards",
@@ -35,7 +61,6 @@ rules =	["The game is about comparing the cards",
 		"nothing but the four aces, each in it's",
 		"own place."]			  		
 
-			  		
 
 def distSq(a, b):
 	return pow(a[0]-b[0], 2) + pow(a[1]-b[1], 2)
@@ -203,6 +228,9 @@ class Table(Deck):
 			top.set_draggable()
 		return popped
 
+	def is_empty(self):
+		return len(self.deck) == 0
+
 	def place(self, card):
 		# Make current top card undraggable
 		if not self.is_empty():
@@ -230,7 +258,7 @@ class Table(Deck):
 				at = tuple(map(sum, zip(self.pos, (0, self.STACK_STRIDE*i))))
 				card.render(screen)
 		else:
-			screen.blit(BJORUNDUR, self.pos)
+			screen.blit(STEINI, self.pos)
 
 class Stack(Deck):
 	def __init__(self, pos, ranks = range(1, 14), suits = ['H', 'S', 'D', 'C']):
@@ -252,7 +280,7 @@ class Stack(Deck):
 
 	def render(self, screen):
 		if not self.is_empty():
-			screen.blit(BJORUNDUR, self.pos)
+			screen.blit(STEINI, self.pos)
 			
 	def shuffle(self):
 		random.shuffle(self.deck)
@@ -269,20 +297,36 @@ class Trash(Deck):
 
 	def render(self, screen):
 		if self.is_empty():
-			screen.blit(BJORUNDUR, self.pos)
+			screen.blit(STEINI, self.pos)
 		elif len(self.deck) == 1:
-			screen.blit(BJORUNDUR, self.pos)
+			screen.blit(STEINI, self.pos)
 			self.top().render(screen)
 		else:
 			self.deck[-2].render(screen)
 			self.top().render(screen)
 
 class GameState:
-	this_game = []
 	def __init__(self):
+		self.this_game = []
 		self.deck = Stack((40, 50))
 		self.table = [Table((250 + 155*i, 50)) for i in range(NUM_DECKS)]
 		self.trash = Trash((900, 460))
+		self.log()
+
+	# Ugly function no one should use.
+	def force_reset_drag_status(self):
+		for card in self.deck.deck:
+			card.set_undraggable()
+
+		for table in self.table:
+			for i, card in enumerate(table.deck):
+				if i == len(table.deck):
+					card.set_draggable()
+				else:
+					card.set_undraggable()
+
+		for card in self.trash.deck:
+			card.set_undraggable()
 
 	def draw(self):
 		if not self.deck.is_empty():
@@ -311,6 +355,33 @@ class GameState:
 					return True
 		return False
 
+	def auto_discard(self):
+		#while True:
+		#no_change = True
+		for t in range(0, NUM_DECKS):
+			if self.can_discard(self.table[t].top(), t):
+				no_change = False
+				card = self.table[t].pop()
+				self.trash.place(card)
+				self.log()
+				break
+		#if no_change:
+		#	break
+
+	def auto_move(self):
+		for t in self.table:
+			highest = None
+			if t.is_empty():
+				print("true")
+				for a in self.table:
+					if highest == None and a != None and not a.top().is_dummy():
+						highest = a
+					elif highest != None and highest.top() < a.top() and len(a.deck) > 1:
+						highest = a
+			if highest != None:
+				t.place(highest.pop())
+				self.log()
+
 	# has_won checks whether the game has been won
 	def has_won(self):
 		victory = self.deck.is_empty()
@@ -319,16 +390,22 @@ class GameState:
 		return victory	
 
 	def dump_state(self):
-		return { 'deck' : [card for card in self.deck.deck],
-		'table' : [card for card in [table.deck for table in self.table]],
-		'trash' : [card for card in self.trash.deck]
+		return { 'deck' : [copy.copy(card) for card in self.deck.deck],
+		'table' : [copy.copy(card) for card in [table.deck for table in self.table]],
+		'trash' : [copy.copy(card) for card in self.trash.deck]
 		 }
 
 	def revert_to_state(self, state):
+		print "Old deck: " + str(self.deck)
+		print "New deck to be set: " + str(state['deck'])
 		self.deck.set_deck(state['deck'])
-		for table in self.table:
-			table.set_deck(state['table'])
+		print "New deck: " + str(self.deck)
+
+		for i, table in enumerate(self.table):
+			print state['table'][i]
+			table.set_deck(state['table'][i])
 		self.trash.set_deck(state['trash'])
+		self.force_reset_drag_status()
 
 	def log(self):
 		self.this_game.append(self.dump_state())
@@ -385,8 +462,11 @@ class Game(GameState):
 			print "handle"
 			if len(self.this_game) > 1:
 				popped = self.this_game.pop()
-				print popped
+				print "Popped: " + str(popped)
+				print "Minus one" + str(self.this_game[-1])
 				self.revert_to_state(self.this_game[-1])
+			return True
+		return False
 
 	def handle_draw(self, mouse_pos):
 		if not self.deck.is_empty():
@@ -425,11 +505,24 @@ class Game(GameState):
 			mouse_buttons = pygame.mouse.get_pressed()
 			mouse_delta = pygame.mouse.get_rel()
 			mouse_pos = pygame.mouse.get_pos()
-		
+			
+			if event.type == pygame.KEYDOWN:
+				p = pygame.key.get_pressed()
+				if p[pygame.K_d]:
+					print("automate discard")
+					self.auto_discard()
+				if p[pygame.K_f]:
+					print("automate move")
+					self.auto_move()
+					
+				global webcam
+				if p[pygame.K_w]:
+					webcam = not webcam
+
 			# Voluntary quit
 			if event.type == pygame.QUIT:
 				self.running = False	
-	
+				
 			# Release the card if currently held, when releasing the mouse
 			if event.type == pygame.MOUSEBUTTONUP:
 				if self.current_card and self.last_table:
@@ -437,25 +530,25 @@ class Game(GameState):
 						self.last_table.place(self.current_card)
 					self.current_card.is_held = False
 					self.current_card = None
-					
-			if event.type == pygame.MOUSEBUTTONDOWN:
-				if not self.current_card:
-					self.handle_back_arrow(mouse_pos)
-					self.handle_trash(mouse_pos)
-					self.handle_draw(mouse_pos)
 
 			# If left mouse button is pressed, check if we're holding a card
 			# if not, holding a card, set self.current_card to the card pressed
 			if mouse_buttons == (1, 0, 0):
-				if not self.current_card:
-					if self.card_pressed(mouse_pos):
-						(self.current_card, self.last_table, i) = self.card_pressed(mouse_pos)
-						if self.current_card and self.last_table:
-							self.current_card = self.last_table.top()
-							self.current_card.is_held = True
-							self.last_table.pop();
+				if event.type == pygame.MOUSEBUTTONDOWN:
+					if not self.current_card:
+						if not self.handle_back_arrow(mouse_pos):
+							self.handle_trash(mouse_pos)
+							self.handle_draw(mouse_pos)
 				else:
-					self.current_card.nudge(mouse_delta)
+					if not self.current_card:
+						if self.card_pressed(mouse_pos):
+							(self.current_card, self.last_table, i) = self.card_pressed(mouse_pos)
+							if self.current_card and self.last_table:
+								self.current_card = self.last_table.top()
+								self.current_card.is_held = True
+								self.last_table.pop();
+					else:
+						self.current_card.nudge(mouse_delta)
 	
 		for table in self.table:
 			for card in table.deck:
@@ -472,9 +565,11 @@ class Game(GameState):
 		if self.current_card:
 			self.current_card.update()
 
-
-
 	def render(self):
+		global webcam
+		global STEINI 
+		if webcam == True:
+			STEINI = picture()
 		# Render deck
 		self.screen.fill(self.background_color)
 		self.deck.render(self.screen)
@@ -489,21 +584,23 @@ class Game(GameState):
 		if len(self.this_game) > 1:
 			self.screen.blit(self.back_arrow, (20, self.screen.get_rect().height-70))
 
-		self.print_rules(rules)
-		# Update the screen.
-
+		self.print_text(rules,30,260,16,25)
+		
 		if self.is_finished():
 			self.print_defeat_status()
 
 		if self.has_won():
 			self.print_win_status()	
-		
+
+			
+		# Update the screen.
 		pygame.display.flip()
 
 	def play(self):
 		while self.running:
 			self.update()
 			self.render()
+
 
 	def print_win_status(self):
 		self.screen.blit(VICTORY_PANEL, (417, 300))
@@ -513,9 +610,10 @@ class Game(GameState):
 		self.screen.blit(DEFEAT_PANEL, (417, 300))			
 			
 
-	def print_rules(self,rules):
-		font_rules = pygame.font.SysFont('assets/clarendon.ttf', 16)
-		(x,y) = (30,260) #Pos of first string
-		for line in rules:
-			self.screen.blit(font_rules.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 25) #Move each line 25 down
+
+	def print_text(self,text,a,b,fontsize,diff):
+		font_text = pygame.font.SysFont('assets/clarendon.ttf', fontsize)
+		for line in text:
+			self.screen.blit(font_text.render(line, True, (0,0,0)), (a, b))
+			(a,b) = (a,b + diff) #Move each line 25 down
+
