@@ -520,15 +520,15 @@ class Game(GameState):
 		if len(self.this_game) > 1:
 			self.screen.blit(self.back_arrow, (20, self.screen.get_rect().height-70))
 
-		self.print_rules(rules)
-		# Update the screen.
-
-		if self.is_finished():
-			self.print_defeat_status(defeat_status)
-
-		if self.has_won():
-			self.print_win_status(winning_status)	
+		self.print_text(rules,30,260,16,25)
 		
+		if self.is_finished():
+			self.print_text(defeat_status,400,300,20,25)
+		
+		if self.has_won():
+			self.print_text(winning_status,400,300,20,25)
+			
+		# Update the screen.
 		pygame.display.flip()
 
 	def play(self):
@@ -536,24 +536,8 @@ class Game(GameState):
 			self.update()
 			self.render()
 
-	def print_win_status(self, winning_status):
-		font_winning_status = pygame.font.SysFont('assets/clarendon.ttf', 20)
-		(x,y) = (400, 300)
-		for line in winning_status:
-			self.screen.blit(font_winning_status.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 25)
-	
-	def print_defeat_status(self, defeat_status):
-		font_defeat_status = pygame.font.SysFont('assets/clarendon.ttf', 20)
-		(x,y) = (400, 300)
-		for line in defeat_status:
-			self.screen.blit(font_defeat_status.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 25)	
-			
-
-	def print_rules(self,rules):
-		font_rules = pygame.font.SysFont('assets/clarendon.ttf', 16)
-		(x,y) = (30,260) #Pos of first string
-		for line in rules:
-			self.screen.blit(font_rules.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 25) #Move each line 25 down
+	def print_text(self,text,a,b,fontsize,diff):
+		font_text = pygame.font.SysFont('assets/clarendon.ttf', fontsize)
+		for line in text:
+			self.screen.blit(font_text.render(line, True, (0,0,0)), (a, b))
+			(a,b) = (a,b + diff) #Move each line 25 down
