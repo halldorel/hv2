@@ -201,6 +201,9 @@ class Table(Deck):
 			top.set_draggable()
 		return popped
 
+	def is_empty(self):
+		return len(self.deck) == 0
+
 	def place(self, card):
 		# Make current top card undraggable
 		if not self.is_empty():
@@ -308,6 +311,33 @@ class GameState:
 				if this < that:
 					return True
 		return False
+
+	def auto_discard(self):
+		#while True:
+		#no_change = True
+		for t in range(0, NUM_DECKS):
+			if self.can_discard(self.table[t].top(), t):
+				no_change = False
+				card = self.table[t].pop()
+				self.trash.place(card)
+				self.log()
+				break
+		#if no_change:
+		#	break
+
+	def auto_move(self):
+		for t in self.table:
+			highest = None
+			if t.is_empty():
+				print("true")
+				for a in self.table:
+					if highest == None and a != None and not a.top().is_dummy():
+						highest = a
+					elif highest != None and highest.top() < a.top() and len(a.deck) > 1:
+						highest = a
+			if highest != None:
+				t.place(highest.pop())
+				self.log()
 
 	# has_won checks whether the game has been won
 	def has_won(self):
@@ -430,10 +460,15 @@ class Game(GameState):
 			mouse_buttons = pygame.mouse.get_pressed()
 			mouse_delta = pygame.mouse.get_rel()
 			mouse_pos = pygame.mouse.get_pos()
-
+			
 			if event.type == pygame.KEYDOWN:
-				print self.this_game.pop()
-				print self.this_game
+				p = pygame.key.get_pressed()
+				if p[pygame.K_d]:
+					print("automate discard")
+					self.auto_discard()
+				if p[pygame.K_f]:
+					print("automate move")
+					self.auto_move()
 
 			# Voluntary quit
 			if event.type == pygame.QUIT:
@@ -492,15 +527,15 @@ class Game(GameState):
 		if len(self.this_game) > 1:
 			self.screen.blit(self.back_arrow, (20, self.screen.get_rect().height-70))
 
-		self.print_rules(rules)
-		# Update the screen.
-
-		if self.is_finished():
-			self.print_defeat_status(defeat_status)
-
-		if self.has_won():
-			self.print_win_status(winning_status)	
+		self.print_text(rules,30,260,16,25)
 		
+		if self.is_finished():
+			self.print_text(defeat_status,400,300,20,25)
+		
+		if self.has_won():
+			self.print_text(winning_status,400,300,20,25)
+			
+		# Update the screen.
 		pygame.display.flip()
 
 	def play(self):
@@ -508,24 +543,8 @@ class Game(GameState):
 			self.update()
 			self.render()
 
-	def print_win_status(self, winning_status):
-		font_winning_status = pygame.font.SysFont('assets/clarendon.ttf', 20)
-		(x,y) = (400, 300)
-		for line in winning_status:
-			self.screen.blit(font_winning_status.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 25)
-	
-	def print_defeat_status(self, defeat_status):
-		font_defeat_status = pygame.font.SysFont('assets/clarendon.ttf', 20)
-		(x,y) = (400, 300)
-		for line in defeat_status:
-			self.screen.blit(font_defeat_status.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 25)	
-			
-
-	def print_rules(self,rules):
-		font_rules = pygame.font.SysFont('assets/clarendon.ttf', 16)
-		(x,y) = (30,260) #Pos of first string
-		for line in rules:
-			self.screen.blit(font_rules.render(line, True, (0,0,0)), (x, y))
-			(x,y) = (x,y + 25) #Move each line 25 down
+	def print_text(self,text,a,b,fontsize,diff):
+		font_text = pygame.font.SysFont('assets/clarendon.ttf', fontsize)
+		for line in text:
+			self.screen.blit(font_text.render(line, True, (0,0,0)), (a, b))
+			(a,b) = (a,b + diff) #Move each line 25 down
