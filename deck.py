@@ -15,7 +15,7 @@ NUM_DECKS = 4
 pygame.camera.init()
 cam = pygame.camera.Camera(pygame.camera.list_cameras()[0])
 
-if cam not None:
+if cam is not None:
 	cam.start()
 
 # TODO: Convert BJORUNDUR to a global plugin
