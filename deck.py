@@ -516,7 +516,7 @@ class Game(GameState):
 			
 			if event.type == pygame.KEYDOWN:
 				p = pygame.key.get_pressed()
-				if p[pygame.K_d]:
+				if p[pygame.K_t]:
 					print("automate discard")
 					self.auto_discard()
 				if p[pygame.K_f]:
@@ -528,7 +528,8 @@ class Game(GameState):
 				if p[pygame.K_r]:
 					self.running = False
 					self.play_again = True
-
+				if p[pygame.K_d]:
+					self.draw()
 					
 				global webcam
 				if p[pygame.K_w]:
