@@ -70,7 +70,8 @@ keys = ["Press r for a new game and ",
 		"w to un/freeze camera. To",
 		"auto play press f for",
 		"moving to an empty stack",
-		"and d to throw card. For",
+		"and t to throw card and d",
+		"for drawing a card. For",
 		"camera you need Linux."]
 		
 def distSq(a, b):
@@ -523,7 +524,7 @@ class Game(GameState):
 					print("automate move")
 					self.auto_move()
 				if p[pygame.K_q]:
-					print("automate move")
+					print("quit")
 					self.running = False
 				if p[pygame.K_r]:
 					self.running = False
